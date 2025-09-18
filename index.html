@@ -31,7 +31,9 @@
         flex: 1;
         gap: 20px;
         max-width: 1400px;
+        width: 100%;
         margin: 0 auto;
+        box-sizing: border-box;
       }
       .editor,
       .viewer {
@@ -42,6 +44,9 @@
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
         padding: 15px;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
       }
       textarea {
         flex: 1;
@@ -53,6 +58,8 @@
         resize: none;
         background: #f7fafc;
         transition: border-color 0.2s;
+        width: 100%;
+        box-sizing: border-box;
       }
       textarea:focus {
         outline: none;
@@ -69,6 +76,10 @@
         overflow: auto;
         white-space: pre;
         position: relative;
+        word-break: break-all; /* Quebra palavras longas */
+        overflow-wrap: break-word; /* Compatibilidade com navegadores */
+        width: 100%;
+        box-sizing: border-box;
       }
       .tree-view {
         flex: 1;
@@ -77,6 +88,8 @@
         border: 1px solid #e2e8f0;
         border-radius: 6px;
         background: #f7fafc;
+        width: 100%;
+        box-sizing: border-box;
       }
       .controls {
         display: flex;
@@ -211,6 +224,8 @@
         .editor,
         .viewer {
           min-height: 300px;
+          max-width: 100%;
+          width: 100%;
         }
       }
     </style>
@@ -270,9 +285,13 @@
       };
 
       function formatJSON() {
-        const text = input.value.trim();
+        let text = input.value.trim();
         error.innerHTML = "";
         try {
+          // Remover aspas externas se existirem
+          if (text.startsWith('"') && text.endsWith('"')) {
+            text = text.slice(1, -1);
+          }
           let json = text;
           // Tentar parsear múltiplos níveis de strings JSON
           while (typeof json === "string") {
@@ -281,7 +300,7 @@
           const indent = parseInt(indentSelect.value);
           buildCodeView(json, output, indent);
           buildTree(json, tree);
-          localStorage.setItem("jsonData", text);
+          localStorage.setItem("jsonData", input.value);
         } catch (e) {
           let errorMessage = e.message;
           // Traduzir mensagens de erro para o português
@@ -316,6 +335,9 @@
         let text;
         try {
           let json = input.value.trim();
+          if (json.startsWith('"') && json.endsWith('"')) {
+            json = json.slice(1, -1);
+          }
           while (typeof json === "string") {
             json = JSON.parse(json);
           }
