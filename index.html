@@ -10,7 +10,7 @@
         background: linear-gradient(135deg, #f0f2f5 0%, #e4e7eb 100%);
         color: #1a202c;
         margin: 0;
-        padding: 20px 0; /* Removido padding lateral */
+        padding: 20px 0; /* Sem padding lateral */
         display: flex;
         flex-direction: column;
         min-height: 100vh;
@@ -34,9 +34,19 @@
         margin: 0;
         box-sizing: border-box;
       }
-      .editor,
+      .editor {
+        min-width: 400px; /* Largura fixa mínima */
+        width: auto; /* Evita expansão além do mínimo */
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        padding: 15px;
+        box-sizing: border-box;
+      }
       .viewer {
-        flex: 1; /* Cada card ocupa metade da largura */
+        flex: 1; /* Ocupa o espaço restante */
         display: flex;
         flex-direction: column;
         background: #fff;
@@ -222,8 +232,9 @@
         }
         .editor,
         .viewer {
-          min-height: 300px;
+          min-width: 100%; /* Ocupa toda a largura em telas menores */
           width: 100%;
+          min-height: 300px;
         }
       }
     </style>
