@@ -10,7 +10,7 @@
         background: linear-gradient(135deg, #f0f2f5 0%, #e4e7eb 100%);
         color: #1a202c;
         margin: 0;
-        padding: 20px 0; /* Sem padding lateral */
+        padding: 20px 0;
         display: flex;
         flex-direction: column;
         min-height: 100vh;
@@ -30,13 +30,13 @@
         display: flex;
         flex: 1;
         gap: 20px;
-        width: 100%; /* Ocupa toda a largura */
+        width: 100%;
         margin: 0;
         box-sizing: border-box;
       }
       .editor {
-        min-width: 400px; /* Largura fixa mínima */
-        width: auto; /* Evita expansão além do mínimo */
+        min-width: 400px;
+        width: auto;
         display: flex;
         flex-direction: column;
         background: #fff;
@@ -46,7 +46,7 @@
         box-sizing: border-box;
       }
       .viewer {
-        flex: 1; /* Ocupa o espaço restante */
+        flex: 1;
         display: flex;
         flex-direction: column;
         background: #fff;
@@ -84,8 +84,8 @@
         overflow: auto;
         white-space: pre;
         position: relative;
-        word-break: break-all; /* Quebra palavras longas */
-        overflow-wrap: break-word; /* Compatibilidade com navegadores */
+        word-break: break-all;
+        overflow-wrap: break-word;
         width: 100%;
         box-sizing: border-box;
       }
@@ -232,7 +232,7 @@
         }
         .editor,
         .viewer {
-          min-width: 100%; /* Ocupa toda a largura em telas menores */
+          min-width: 100%;
           width: 100%;
           min-height: 300px;
         }
@@ -270,6 +270,7 @@
         <div class="controls">
           <button onclick="toggleView('code')">Visão de Código</button>
           <button onclick="toggleView('tree')">Visão em Árvore</button>
+          <button onclick="copyJSON()">Copiar JSON</button>
         </div>
         <div id="output" style="display: block"></div>
         <div class="tree-view" id="tree" style="display: none"></div>
@@ -283,6 +284,7 @@
       const error = document.getElementById("error");
       const indentSelect = document.getElementById("indent");
       let currentView = "code";
+      let formattedJSON = ""; // Armazena o JSON formatado
 
       // Carregar do armazenamento local
       window.onload = () => {
@@ -307,6 +309,7 @@
             json = JSON.parse(json);
           }
           const indent = parseInt(indentSelect.value);
+          formattedJSON = JSON.stringify(json, null, indent); // Armazena o JSON formatado
           buildCodeView(json, output, indent);
           buildTree(json, tree);
           localStorage.setItem("jsonData", input.value);
@@ -325,6 +328,7 @@
           error.innerHTML = `Erro: ${errorMessage}`;
           output.innerHTML = "";
           tree.innerHTML = "";
+          formattedJSON = "";
         }
       }
 
@@ -344,7 +348,7 @@
         let text;
         try {
           let json = input.value.trim();
-          if (json.startsWith('"') && json.endsWith('"')) {
+          if (json.startsWith('"') && text.endsWith('"')) {
             json = json.slice(1, -1);
           }
           while (typeof json === "string") {
@@ -363,6 +367,21 @@
         a.download = "formatted.json";
         a.click();
         URL.revokeObjectURL(url);
+      }
+
+      function copyJSON() {
+        if (!formattedJSON) {
+          error.innerHTML = `Erro: Nenhum JSON formatado para copiar`;
+          return;
+        }
+        navigator.clipboard.writeText(formattedJSON).then(() => {
+          error.innerHTML = `JSON copiado com sucesso!`;
+          setTimeout(() => {
+            error.innerHTML = "";
+          }, 2000);
+        }).catch(() => {
+          error.innerHTML = `Erro: Falha ao copiar o JSON`;
+        });
       }
 
       function toggleView(view) {
@@ -386,14 +405,14 @@
         openLine.style.marginLeft = `${level * indent}px`;
         const openSpan = document.createElement("span");
         openSpan.textContent = isArray ? "[" : "{";
-        openSpan.className = "code-collapsible open"; // já aberto
+        openSpan.className = "code-collapsible open";
         openLine.appendChild(openSpan);
         wrapper.appendChild(openLine);
 
         // Conteúdo
         const content = document.createElement("div");
         content.className = "code-content";
-        content.style.display = "block"; // já aberto
+        content.style.display = "block";
 
         const entries = isArray
           ? json.map((v, i) => [i, v])
