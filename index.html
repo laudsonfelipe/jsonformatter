@@ -433,6 +433,17 @@
       .code-collapsible.open + .code-content {
         display: block;
       }
+      
+      .collapsed-summary {
+        cursor: pointer;
+        color: #63b3ed;
+        font-style: italic;
+        transition: color 0.2s;
+      }
+      
+      .collapsed-summary:hover {
+        color: #90cdf4;
+      }
       @media (max-width: 1200px) {
         .container {
           gap: 15px;
@@ -1144,7 +1155,9 @@
 
         // Toggle
         const collapsible = openLine.querySelector('.code-collapsible');
-        collapsible.onclick = () => {
+        
+        // Função para expandir/colapsar
+        const toggleContent = () => {
           const isOpen = content.style.display !== "none";
           content.style.display = isOpen ? "none" : "block";
           closeLine.style.display = isOpen ? "none" : "block";
@@ -1155,9 +1168,30 @@
             const summary = isArray ? `[...]` : `{...}`;
             const needsComma = openLine.dataset.needsComma === 'true';
             const finalSummary = needsComma ? `${summary},` : summary;
-            openLine.querySelector('.line-content').innerHTML = `<span>${finalSummary}</span>`;
+            openLine.querySelector('.line-content').innerHTML = `<span class="collapsed-summary">${finalSummary}</span>`;
           } else {
-            openLine.querySelector('.line-content').innerHTML = `<span>${isArray ? "[" : "{"}</span>`;
+            // Restaurar o conteúdo original - apenas o span dentro do line-content
+            const originalSpan = document.createElement("span");
+            originalSpan.textContent = isArray ? "[" : "{";
+            openLine.querySelector('.line-content').innerHTML = "";
+            openLine.querySelector('.line-content').appendChild(originalSpan);
+            
+            // Garantir que a linha de fechamento seja exibida corretamente
+            closeLine.style.display = "flex";
+          }
+        };
+        
+        // Clique na seta
+        collapsible.onclick = (e) => {
+          e.stopPropagation();
+          toggleContent();
+        };
+        
+        // Clique na linha quando colapsada
+        openLine.onclick = (e) => {
+          // Só expandir se estiver colapsado e não clicou na seta
+          if (content.style.display === "none" && !e.target.classList.contains('code-collapsible')) {
+            toggleContent();
           }
         };
       }
