@@ -543,6 +543,7 @@
       <div class="editor">
         <div class="controls">
           <button onclick="formatJSON()">Formatar</button>
+          <!-- <button onclick="repairJSON()">Reparar</button> -->
           <input
             type="file"
             id="upload"
@@ -599,12 +600,12 @@
         let text = input.value.trim();
         error.innerHTML = "";
         
-        // Formatação inteligente - remover aspas externas e caracteres desnecessários
-        text = smartCleanJSON(text);
+        // Usar a mesma lógica simples do JSON Formatter
+        text = simpleCleanJSON(text);
         
         try {
           let json = text;
-          // Tentar parsear múltiplos níveis de strings JSON
+          // Tentar parsear múltiplos níveis de strings JSON (como o JSON Formatter faz)
           while (typeof json === "string") {
             json = JSON.parse(json);
           }
@@ -619,6 +620,9 @@
             showMessage("JSON formatado e limpo automaticamente!", "success");
           }
         } catch (e) {
+          console.log("Erro ao parsear JSON:", e.message);
+          console.log("Posição do erro:", e.message.match(/position \d+/)?.[0]);
+          
           let errorMessage = e.message;
           // Traduzir mensagens de erro para o português
           if (errorMessage.includes("Unexpected non-whitespace character after JSON")) {
@@ -627,6 +631,8 @@
             errorMessage = "Token inesperado: " + (e.message.match(/Unexpected token .+ in JSON at position \d+/)?.[0] || "");
           } else if (errorMessage.includes("Unexpected end of JSON input")) {
             errorMessage = "Fim inesperado da entrada JSON";
+          } else if (errorMessage.includes("Expected property name or '}'")) {
+            errorMessage = "Esperado nome de propriedade ou '}' na posição " + (e.message.match(/position \d+/)?.[0]?.replace("position ", "") || "");
           } else {
             errorMessage = "Erro ao processar o JSON: " + errorMessage;
           }
@@ -641,8 +647,8 @@
         let text = input.value.trim();
         error.innerHTML = "";
         
-        // Formatação inteligente primeiro
-        text = smartCleanJSON(text);
+        // Usar a mesma lógica simples do JSON Formatter
+        text = simpleCleanJSON(text);
         
         try {
           // Tentar parsear primeiro
@@ -722,25 +728,33 @@
       function repairBrokenJSONWithError(text, errorMessage) {
         let repaired = text;
         
+        // Primeiro, tentar reparar HTML escapado
+        repaired = repairEscapedHTML(repaired);
+        
+        // Tentar reparar especificamente o campo HtmlEmail se existir
+        if (repaired.includes('HtmlEmail')) {
+          repaired = repairHtmlEmailField(repaired);
+        }
+        
         // Análise inteligente da estrutura
-        const analysis = analyzeJSONStructure(text);
+        const analysis = analyzeJSONStructure(repaired);
         
         // Reparar baseado na análise
         if (analysis.multipleObjects && !analysis.hasOpeningBracket && !analysis.hasClosingBracket) {
           // Múltiplos objetos sem colchetes - adicionar colchetes de array
-          repaired = '[' + text + ']';
+          repaired = '[' + repaired + ']';
         } else if (analysis.needsOpeningBracket && analysis.hasClosingBracket) {
           // Falta colchete/chave de abertura
-          repaired = addMissingOpening(text, analysis);
+          repaired = addMissingOpening(repaired, analysis);
         } else if (analysis.needsClosingBracket && analysis.hasOpeningBracket) {
           // Falta colchete/chave de fechamento
-          repaired = addMissingClosing(text, analysis);
+          repaired = addMissingClosing(repaired, analysis);
         } else if (analysis.missingCommas > 0) {
           // Falta vírgulas
-          repaired = repairMissingCommas(text);
+          repaired = repairMissingCommas(repaired);
         } else {
           // Tentar reparo geral
-          repaired = repairBrokenJSON(text);
+          repaired = repairBrokenJSON(repaired);
         }
         
         // Se ainda não funcionou, tentar abordagem específica baseada no erro
@@ -858,18 +872,67 @@
         return repaired;
       }
 
-      function smartCleanJSON(text) {
-        // Remover aspas externas se existirem
+      function simpleCleanJSON(text) {
+        // Usar a mesma lógica simples do JSON Formatter
+        // Apenas remover espaços em branco no início e fim
+        text = text.trim();
+        
+        // Remover aspas externas se existirem (como o JSON Formatter faz)
         if ((text.startsWith('"') && text.endsWith('"')) || 
             (text.startsWith("'") && text.endsWith("'"))) {
           text = text.slice(1, -1);
         }
         
-        // Remover escapes desnecessários
-        text = text.replace(/\\"/g, '"').replace(/\\'/g, "'");
+        return text;
+      }
+
+      function smartCleanJSON(text) {
+        // Primeiro, diagnosticar o problema
+        console.log("=== DIAGNÓSTICO JSON ===");
+        console.log("Texto original:", text.substring(0, 50) + "...");
+        console.log("Primeiros 20 caracteres:", JSON.stringify(text.substring(0, 20)));
+        
+        // Primeiro, corrigir a estrutura JSON
+        text = fixJSONStructure(text);
+        console.log("Após correção de estrutura:", text.substring(0, 50) + "...");
+        
+        // Remover aspas externas se existirem
+        if ((text.startsWith('"') && text.endsWith('"')) || 
+            (text.startsWith("'") && text.endsWith("'"))) {
+          console.log("Removendo aspas externas");
+          text = text.slice(1, -1);
+        }
+        
+        // Primeiro, tentar identificar e corrigir problemas específicos com HTML escapado
+        // Tratar casos onde HTML dentro de strings JSON tem aspas não escapadas
+        
+        // Detectar se há HTML dentro de strings JSON
+        const hasHtmlInStrings = text.includes('<') && text.includes('>') && text.includes('"');
+        
+        if (hasHtmlInStrings) {
+          console.log("Detectado HTML em strings - aplicando correções específicas");
+          // Aplicar correções específicas para HTML escapado
+          text = repairEscapedHTML(text);
+        } else {
+          console.log("JSON sem HTML - aplicando limpeza simples");
+          // Para JSON sem HTML, aplicar limpeza mais simples
+          // Remover escapes desnecessários
+          text = text.replace(/\\"/g, '"').replace(/\\'/g, "'");
+          
+          // Corrigir escapes de barras em URLs e HTML
+          text = text.replace(/\\\//g, '/');
+          
+          // Corrigir escapes de caracteres especiais em HTML
+          text = text.replace(/\\n/g, '\n');
+          text = text.replace(/\\t/g, '\t');
+          text = text.replace(/\\r/g, '\r');
+        }
         
         // Remover quebras de linha desnecessárias no início e fim
         text = text.trim();
+        
+        console.log("Texto após limpeza:", text.substring(0, 50) + "...");
+        console.log("=== FIM DIAGNÓSTICO ===");
         
         return text;
       }
@@ -878,7 +941,10 @@
         let repaired = text;
         let changes = [];
         
-        // Primeiro, tentar reparar vírgulas faltando antes de fechar arrays/objetos
+        // Primeiro, tentar reparar HTML escapado em strings
+        repaired = repairEscapedHTML(repaired);
+        
+        // Depois, tentar reparar vírgulas faltando antes de fechar arrays/objetos
         repaired = repairMissingCommas(repaired);
         
         // Contar chaves e colchetes
@@ -909,6 +975,142 @@
           // Se ainda não funcionou, tentar uma abordagem mais agressiva
           return tryAdvancedRepair(text);
         }
+      }
+      
+      function repairEscapedHTML(text) {
+        let repaired = text;
+        
+        // Primeiro, corrigir escapes de barras em URLs
+        repaired = repaired.replace(/\\\//g, '/');
+        
+        // Corrigir escapes de caracteres especiais
+        repaired = repaired.replace(/\\n/g, '\n');
+        repaired = repaired.replace(/\\t/g, '\t');
+        repaired = repaired.replace(/\\r/g, '\r');
+        
+        // Corrigir escapes de caracteres especiais em HTML
+        repaired = repaired.replace(/\\</g, '<');
+        repaired = repaired.replace(/\\>/g, '>');
+        repaired = repaired.replace(/\\&/g, '&');
+        
+        // CORREÇÃO PRINCIPAL: Escapar aspas não escapadas em atributos HTML
+        // Este é o problema principal - aspas dentro de strings JSON que contêm HTML
+        
+        // Primeiro, tratar aspas simples que podem estar causando problemas
+        repaired = repaired.replace(/target='([^']*)'/g, 'target=\\"$1\\"');
+        repaired = repaired.replace(/rel='([^']*)'/g, 'rel=\\"$1\\"');
+        repaired = repaired.replace(/href='([^']*)'/g, 'href=\\"$1\\"');
+        repaired = repaired.replace(/src='([^']*)'/g, 'src=\\"$1\\"');
+        
+        // Depois, tratar aspas duplas não escapadas em atributos HTML
+        repaired = repaired.replace(/target="([^"]*)"/g, 'target=\\"$1\\"');
+        repaired = repaired.replace(/rel="([^"]*)"/g, 'rel=\\"$1\\"');
+        repaired = repaired.replace(/href="([^"]*)"/g, 'href=\\"$1\\"');
+        repaired = repaired.replace(/src="([^"]*)"/g, 'src=\\"$1\\"');
+        
+        // Corrigir outros atributos HTML comuns
+        repaired = repaired.replace(/class="([^"]*)"/g, 'class=\\"$1\\"');
+        repaired = repaired.replace(/id="([^"]*)"/g, 'id=\\"$1\\"');
+        repaired = repaired.replace(/style="([^"]*)"/g, 'style=\\"$1\\"');
+        repaired = repaired.replace(/alt="([^"]*)"/g, 'alt=\\"$1\\"');
+        repaired = repaired.replace(/title="([^"]*)"/g, 'title=\\"$1\\"');
+        
+        // Tratar casos especiais onde aspas podem estar mal escapadas
+        repaired = repaired.replace(/([^\\])"/g, '$1\\"'); // Escapar aspas não escapadas
+        repaired = repaired.replace(/^"/g, '\\"'); // Escapar aspas no início
+        repaired = repaired.replace(/"$/g, '\\"'); // Escapar aspas no final
+        
+        // Corrigir escapes duplos que podem ter sido criados
+        repaired = repaired.replace(/\\\\"/g, '\\"');
+        repaired = repaired.replace(/\\\\\\"/g, '\\"'); // Tratar escapes triplos
+        
+        return repaired;
+      }
+
+      function repairHtmlEmailField(text) {
+        // Função específica para reparar o campo HtmlEmail que está causando problemas
+        let repaired = text;
+        
+        // Encontrar o campo HtmlEmail e reparar especificamente
+        const htmlEmailRegex = /"HtmlEmail"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g;
+        
+        repaired = repaired.replace(htmlEmailRegex, (match, content) => {
+          // Escapar aspas não escapadas dentro do conteúdo HTML
+          let escapedContent = content;
+          
+          // Tratar aspas não escapadas em atributos HTML
+          escapedContent = escapedContent.replace(/target="([^"]*)"/g, 'target=\\"$1\\"');
+          escapedContent = escapedContent.replace(/rel="([^"]*)"/g, 'rel=\\"$1\\"');
+          escapedContent = escapedContent.replace(/href="([^"]*)"/g, 'href=\\"$1\\"');
+          escapedContent = escapedContent.replace(/src="([^"]*)"/g, 'src=\\"$1\\"');
+          
+          // Tratar outros atributos HTML comuns
+          escapedContent = escapedContent.replace(/class="([^"]*)"/g, 'class=\\"$1\\"');
+          escapedContent = escapedContent.replace(/id="([^"]*)"/g, 'id=\\"$1\\"');
+          escapedContent = escapedContent.replace(/style="([^"]*)"/g, 'style=\\"$1\\"');
+          escapedContent = escapedContent.replace(/alt="([^"]*)"/g, 'alt=\\"$1\\"');
+          escapedContent = escapedContent.replace(/title="([^"]*)"/g, 'title=\\"$1\\"');
+          
+          // Tratar aspas não escapadas que não estão em atributos
+          escapedContent = escapedContent.replace(/([^\\])"/g, '$1\\"');
+          
+          // Corrigir escapes duplos
+          escapedContent = escapedContent.replace(/\\\\"/g, '\\"');
+          
+          return `"HtmlEmail": "${escapedContent}"`;
+        });
+        
+        return repaired;
+      }
+
+      function fixJSONStructure(text) {
+        // Função para corrigir problemas de estrutura JSON
+        let fixed = text;
+        
+        // Remover caracteres invisíveis ou problemáticos no início
+        fixed = fixed.replace(/^[\s\u00A0\u2000-\u200F\u2028-\u202F\u205F-\u206F\u3000\uFEFF]+/, '');
+        
+        // Garantir que comece com { ou [
+        if (!fixed.startsWith('{') && !fixed.startsWith('[')) {
+          // Tentar encontrar onde começa o JSON real
+          const firstBrace = fixed.indexOf('{');
+          const firstBracket = fixed.indexOf('[');
+          
+          if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+            fixed = fixed.substring(firstBrace);
+          } else if (firstBracket !== -1) {
+            fixed = fixed.substring(firstBracket);
+          } else {
+            // Se não encontrar { ou [, tentar adicionar
+            if (fixed.includes(':') || fixed.includes('"')) {
+              fixed = '{' + fixed;
+            } else {
+              fixed = '[' + fixed;
+            }
+          }
+        }
+        
+        // Garantir que termine com } ou ]
+        if (!fixed.endsWith('}') && !fixed.endsWith(']')) {
+          // Tentar encontrar onde termina o JSON real
+          const lastBrace = fixed.lastIndexOf('}');
+          const lastBracket = fixed.lastIndexOf(']');
+          
+          if (lastBrace !== -1 && (lastBracket === -1 || lastBrace > lastBracket)) {
+            fixed = fixed.substring(0, lastBrace + 1);
+          } else if (lastBracket !== -1) {
+            fixed = fixed.substring(0, lastBracket + 1);
+          } else {
+            // Se não encontrar } ou ], tentar adicionar
+            if (fixed.includes(':') || fixed.includes('"')) {
+              fixed = fixed + '}';
+            } else {
+              fixed = fixed + ']';
+            }
+          }
+        }
+        
+        return fixed;
       }
 
       function repairMissingCommas(text) {
@@ -1045,7 +1247,7 @@
       function downloadJSON() {
         let text;
         try {
-          let json = smartCleanJSON(input.value.trim());
+          let json = simpleCleanJSON(input.value.trim());
           while (typeof json === "string") {
             json = JSON.parse(json);
           }
@@ -1649,6 +1851,174 @@
       }
       
       window.debugTreeDetailed = debugTreeDetailed;
+      
+      // Função para testar JSON com HTML escapado
+      function testHTMLJSON() {
+        const htmlJSON = `{
+    "status": "ok",
+    "httpStatusCode": 200,
+    "data": {
+        "message": "Registro criado com sucesso",
+        "CodUsuario": 2777841,
+        "Senha": "432311",
+        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target=\\"\\_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/ava.cofenplay.com.br\\">AVA Cofenplay<\\/a><\\/p><p><a target=\\"\\_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/cofenplay.com.br\\">Cofenplay<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src=\\"http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863\\">"
+    }
+}`;
+        
+        // Inserir o JSON de teste
+        input.value = htmlJSON;
+        formatJSON();
+        
+        console.log("JSON com HTML escapado inserido. Verifique se foi formatado corretamente.");
+      }
+      
+      window.testHTMLJSON = testHTMLJSON;
+      
+      // Função para testar o JSON problemático específico
+      function testProblematicJSON() {
+        const problematicJSON = `{
+    "status": "ok",
+    "httpStatusCode": 200,
+    "data": {
+        "message": "Registro criado com sucesso",
+        "CodUsuario": 2777841,
+        "Senha": "432311",
+        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target="_blank" rel="noopener noreferrer nofollow" href="https:\\/\\/ava.cofenplay.com.br">AVA Cofenplay<\\/a><\\/p><p><a target="_blank" rel="noopener noreferrer nofollow" href="https:\\/\\/cofenplay.com.br">Cofenplay<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src="http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863">"
+    }
+}`;
+        
+        console.log("=== TESTE DO JSON PROBLEMÁTICO ===");
+        console.log("JSON original inserido");
+        
+        // Inserir o JSON de teste
+        input.value = problematicJSON;
+        
+        // Tentar formatar
+        try {
+          formatJSON();
+          console.log("✅ JSON formatado com sucesso!");
+        } catch (e) {
+          console.log("❌ Erro ao formatar:", e.message);
+        }
+      }
+
+      // Função para testar o JSON exato fornecido pelo usuário
+      function testUserJSON() {
+        const userJSON = `{
+    "status": "ok",
+    "httpStatusCode": 200,
+    "data": {
+        "message": "Registro criado com sucesso",
+        "CodUsuario": 2777841,
+        "Senha": "432311",
+        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/ava.cofenplay.com.br\\">AVA Cofenplay<\\/a><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/cofenplay.com.br\\">Cofen Regex<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src=\\"http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863\\">"
+    }
+}`;
+        
+        console.log("=== TESTE DO JSON DO USUÁRIO ===");
+        console.log("JSON exato fornecido pelo usuário inserido");
+        
+        // Inserir o JSON de teste
+        input.value = userJSON;
+        
+        // Tentar formatar
+        try {
+          formatJSON();
+          console.log("✅ JSON formatado com sucesso!");
+        } catch (e) {
+          console.log("❌ Erro ao formatar:", e.message);
+          console.log("Tentando reparar automaticamente...");
+          
+          // Tentar reparar
+          try {
+            repairJSON();
+          } catch (repairError) {
+            console.log("❌ Erro ao reparar:", repairError.message);
+          }
+        }
+      }
+
+      // Função para testar com a mesma lógica do JSON Formatter
+      function testJSONFormatterLogic() {
+        const userJSON = `{
+    "status": "ok",
+    "httpStatusCode": 200,
+    "data": {
+        "message": "Registro criado com sucesso",
+        "CodUsuario": 2777841,
+        "Senha": "432311",
+        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/ava.cofenplay.com.br\\">AVA Cofenplay<\\/a><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/cofenplay.com.br\\">Cofenplay<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src=\\"http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863\\">"
+    }
+}`;
+        
+        console.log("=== TESTE COM LÓGICA DO JSON FORMATTER ===");
+        console.log("Testando com a mesma lógica simples do JSON Formatter");
+        
+        // Inserir o JSON de teste
+        input.value = userJSON;
+        
+        // Usar a mesma lógica do JSON Formatter
+        let text = userJSON.trim();
+        
+        // Remover aspas externas se existirem (como o JSON Formatter faz)
+        if ((text.startsWith('"') && text.endsWith('"')) || 
+            (text.startsWith("'") && text.endsWith("'"))) {
+          text = text.slice(1, -1);
+        }
+        
+        console.log("Texto após limpeza simples:", text.substring(0, 100) + "...");
+        
+        try {
+          let json = text;
+          // Tentar parsear múltiplos níveis de strings JSON (como o JSON Formatter faz)
+          while (typeof json === "string") {
+            json = JSON.parse(json);
+          }
+          
+          console.log("✅ JSON parseado com sucesso usando a lógica do JSON Formatter!");
+          console.log("Tipo:", Array.isArray(json) ? "Array" : "Object");
+          console.log("Chaves principais:", Object.keys(json));
+          
+          // Formatar e exibir
+          formatJSON();
+          
+        } catch (e) {
+          console.log("❌ Erro ao parsear:", e.message);
+          console.log("Posição do erro:", e.message.match(/position \d+/)?.[0]);
+        }
+      }
+
+      // Função para testar o JSON problemático atual
+      function testCurrentJSON() {
+        console.log("=== TESTE DO JSON ATUAL ===");
+        console.log("JSON atual do campo de entrada:");
+        
+        const currentJSON = input.value;
+        console.log("Primeiros 100 caracteres:", currentJSON.substring(0, 100));
+        console.log("Últimos 100 caracteres:", currentJSON.substring(Math.max(0, currentJSON.length - 100)));
+        
+        // Tentar formatar
+        try {
+          formatJSON();
+          console.log("✅ JSON formatado com sucesso!");
+        } catch (e) {
+          console.log("❌ Erro ao formatar:", e.message);
+          console.log("Posição do erro:", e.message.match(/position \d+/)?.[0]);
+          
+          // Mostrar o caractere na posição do erro
+          const positionMatch = e.message.match(/position (\d+)/);
+          if (positionMatch) {
+            const position = parseInt(positionMatch[1]);
+            console.log("Caractere na posição", position, ":", JSON.stringify(currentJSON[position]));
+            console.log("Contexto ao redor:", JSON.stringify(currentJSON.substring(Math.max(0, position - 10), position + 10)));
+          }
+        }
+      }
+      
+      window.testProblematicJSON = testProblematicJSON;
+      window.testUserJSON = testUserJSON;
+      window.testCurrentJSON = testCurrentJSON;
+      window.testJSONFormatterLogic = testJSONFormatterLogic;
       
       // Função de pesquisa
       function searchJSON() {
