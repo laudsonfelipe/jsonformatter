@@ -444,6 +444,35 @@
       .collapsed-summary:hover {
         color: #90cdf4;
       }
+      
+      #searchInput {
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid #4a5568;
+        background: #1a202c;
+        color: #e2e8f0;
+        font-size: 12px;
+        margin-left: 6px;
+        transition: border-color 0.2s;
+      }
+      
+      #searchInput:focus {
+        outline: none;
+        border-color: #63b3ed;
+      }
+      
+      .search-highlight {
+        background-color: #ffd700;
+        color: #1a202c;
+        padding: 1px 2px;
+        border-radius: 2px;
+        font-weight: bold;
+      }
+      
+      .search-result {
+        background-color: #2b6cb0;
+        color: #fff;
+      }
       @media (max-width: 1200px) {
         .container {
           gap: 15px;
@@ -523,7 +552,6 @@
           <button onclick="document.getElementById('upload').click()">
             Carregar
           </button>
-          <button onclick="downloadJSON()">Baixar</button>
           <select id="indent">
             <option value="2">2</option>
             <option value="3">3</option>
@@ -538,6 +566,9 @@
           <button id="codeBtn" onclick="toggleView('code')">Código</button>
           <button id="treeBtn" onclick="toggleView('tree')">Árvore</button>
           <button onclick="copyJSON()">Copiar</button>
+          <button onclick="downloadJSON()">Baixar</button>
+          <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="searchJSON()" style="flex: 1; max-width: 200px;">
+          <button onclick="clearSearch()" title="Limpar pesquisa">✕</button>
         </div>
         <div id="output" style="display: block"></div>
         <div class="tree-view" id="tree" style="display: none"></div>
@@ -1618,6 +1649,125 @@
       }
       
       window.debugTreeDetailed = debugTreeDetailed;
+      
+      // Função de pesquisa
+      function searchJSON() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+          clearSearch();
+          return;
+        }
+        
+        if (currentView === 'code') {
+          searchInCodeView(searchTerm);
+        } else {
+          searchInTreeView(searchTerm);
+        }
+      }
+      
+      function searchInCodeView(searchTerm) {
+        const output = document.getElementById('output');
+        const lines = output.querySelectorAll('.code-line');
+        
+        // Remover highlights anteriores
+        lines.forEach(line => {
+          line.classList.remove('search-result');
+          const highlights = line.querySelectorAll('.search-highlight');
+          highlights.forEach(highlight => {
+            const parent = highlight.parentNode;
+            parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+            parent.normalize();
+          });
+        });
+        
+        let foundResults = false;
+        
+        lines.forEach(line => {
+          const lineContent = line.querySelector('.line-content');
+          if (lineContent) {
+            const text = lineContent.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+              line.classList.add('search-result');
+              foundResults = true;
+              
+              // Destacar o termo encontrado
+              highlightSearchTerm(lineContent, searchTerm);
+            }
+          }
+        });
+        
+        if (foundResults) {
+          // Scroll para o primeiro resultado
+          const firstResult = output.querySelector('.search-result');
+          if (firstResult) {
+            firstResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
+      
+      function searchInTreeView(searchTerm) {
+        const tree = document.getElementById('tree');
+        const lines = tree.querySelectorAll('.tree-line');
+        
+        // Remover highlights anteriores
+        lines.forEach(line => {
+          line.classList.remove('search-result');
+          const highlights = line.querySelectorAll('.search-highlight');
+          highlights.forEach(highlight => {
+            const parent = highlight.parentNode;
+            parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+            parent.normalize();
+          });
+        });
+        
+        let foundResults = false;
+        
+        lines.forEach(line => {
+          const text = line.textContent.toLowerCase();
+          if (text.includes(searchTerm)) {
+            line.classList.add('search-result');
+            foundResults = true;
+            
+            // Destacar o termo encontrado
+            const lineContent = line.querySelector('span:last-child');
+            if (lineContent) {
+              highlightSearchTerm(lineContent, searchTerm);
+            }
+          }
+        });
+        
+        if (foundResults) {
+          // Scroll para o primeiro resultado
+          const firstResult = tree.querySelector('.search-result');
+          if (firstResult) {
+            firstResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
+      
+      function highlightSearchTerm(element, searchTerm) {
+        const text = element.textContent;
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        const highlightedText = text.replace(regex, '<span class="search-highlight">$1</span>');
+        element.innerHTML = highlightedText;
+      }
+      
+      function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        
+        // Remover todos os highlights
+        const allLines = document.querySelectorAll('.code-line, .tree-line');
+        allLines.forEach(line => {
+          line.classList.remove('search-result');
+          const highlights = line.querySelectorAll('.search-highlight');
+          highlights.forEach(highlight => {
+            const parent = highlight.parentNode;
+            parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+            parent.normalize();
+          });
+        });
+      }
     </script>
   </body>
 </html>
