@@ -198,11 +198,16 @@
       button:active {
         transform: translateY(0);
       }
+      button.active {
+        background: #2b6cb0;
+        color: #fff;
+        font-weight: 600;
+      }
       select {
         padding: 6px 8px;
         border-radius: 6px;
         border: 1px solid #4a5568;
-        background: #2d3748;
+        background: #3182ce;
         color: #e2e8f0;
         cursor: pointer;
         font-size: 12px;
@@ -416,11 +421,11 @@
         transition: transform 0.2s;
       }
       .code-collapsible::before {
-        content: "▶";
+        content: "▼";
         transition: transform 0.2s;
       }
       .code-collapsible.open::before {
-        transform: rotate(90deg);
+        transform: rotate(-90deg);
       }
       .code-content {
         display: none;
@@ -498,7 +503,6 @@
       <div class="editor">
         <div class="controls">
           <button onclick="formatJSON()">Formatar</button>
-          <button onclick="repairJSON()">Reparar</button>
           <input
             type="file"
             id="upload"
@@ -520,8 +524,8 @@
       </div>
       <div class="viewer">
         <div class="controls">
-          <button onclick="toggleView('code')">Código</button>
-          <button onclick="toggleView('tree')">Árvore</button>
+          <button id="codeBtn" onclick="toggleView('code')">Código</button>
+          <button id="treeBtn" onclick="toggleView('tree')">Árvore</button>
           <button onclick="copyJSON()">Copiar</button>
         </div>
         <div id="output" style="display: block"></div>
@@ -545,6 +549,8 @@
           input.value = saved;
           formatJSON();
         }
+        // Definir botão "Código" como ativo por padrão
+        document.getElementById('codeBtn').classList.add('active');
       };
 
       function formatJSON() {
@@ -674,17 +680,137 @@
       function repairBrokenJSONWithError(text, errorMessage) {
         let repaired = text;
         
-        // Se o erro é específico sobre vírgulas ou colchetes, usar abordagem específica primeiro
-        if (errorMessage.includes("Expected ',' or ']'") || errorMessage.includes("Expected ',' or '}'")) {
-          repaired = trySpecificRepair(repaired, errorMessage);
+        // Análise inteligente da estrutura
+        const analysis = analyzeJSONStructure(text);
+        
+        // Reparar baseado na análise
+        if (analysis.multipleObjects && !analysis.hasOpeningBracket && !analysis.hasClosingBracket) {
+          // Múltiplos objetos sem colchetes - adicionar colchetes de array
+          repaired = '[' + text + ']';
+        } else if (analysis.needsOpeningBracket && analysis.hasClosingBracket) {
+          // Falta colchete/chave de abertura
+          repaired = addMissingOpening(text, analysis);
+        } else if (analysis.needsClosingBracket && analysis.hasOpeningBracket) {
+          // Falta colchete/chave de fechamento
+          repaired = addMissingClosing(text, analysis);
+        } else if (analysis.missingCommas > 0) {
+          // Falta vírgulas
+          repaired = repairMissingCommas(text);
         } else {
-          // Caso contrário, usar abordagem geral
-          repaired = repairBrokenJSON(repaired);
+          // Tentar reparo geral
+          repaired = repairBrokenJSON(text);
         }
         
-        // Se ainda não funcionou, tentar reparar vírgulas faltando
+        // Se ainda não funcionou, tentar abordagem específica baseada no erro
         if (repaired === text) {
-          repaired = repairMissingCommas(repaired);
+          if (errorMessage.includes("Expected ',' or ']'") || errorMessage.includes("Expected ',' or '}'")) {
+            repaired = trySpecificRepair(repaired, errorMessage);
+          }
+        }
+        
+        return repaired;
+      }
+      
+      function analyzeJSONStructure(text) {
+        const trimmed = text.trim();
+        const openBraces = (trimmed.match(/\{/g) || []).length;
+        const closeBraces = (trimmed.match(/\}/g) || []).length;
+        const openBrackets = (trimmed.match(/\[/g) || []).length;
+        const closeBrackets = (trimmed.match(/\]/g) || []).length;
+        
+        const startsWithBrace = trimmed.startsWith('{');
+        const startsWithBracket = trimmed.startsWith('[');
+        const endsWithBrace = trimmed.endsWith('}');
+        const endsWithBracket = trimmed.endsWith(']');
+        
+        const hasOpeningBracket = startsWithBrace || startsWithBracket;
+        const hasClosingBracket = endsWithBrace || endsWithBracket;
+        
+        // Detectar múltiplos objetos separados por vírgulas
+        const multipleObjects = detectMultipleObjects(trimmed);
+        
+        const needsOpeningBracket = !hasOpeningBracket && (closeBraces > 0 || closeBrackets > 0);
+        const needsClosingBracket = !hasClosingBracket && (openBraces > 0 || openBrackets > 0);
+        
+        // Contar vírgulas faltando (aproximação)
+        const missingCommas = Math.max(0, Math.max(openBraces - closeBraces, openBrackets - closeBrackets));
+        
+        return {
+          openBraces,
+          closeBraces,
+          openBrackets,
+          closeBrackets,
+          hasOpeningBracket,
+          hasClosingBracket,
+          needsOpeningBracket,
+          needsClosingBracket,
+          missingCommas,
+          multipleObjects,
+          isArray: startsWithBracket || (!startsWithBrace && !startsWithBracket && closeBrackets > 0) || multipleObjects,
+          isObject: startsWithBrace || (!startsWithBracket && !startsWithBrace && closeBraces > 0)
+        };
+      }
+      
+      function detectMultipleObjects(text) {
+        // Contar quantos objetos completos existem
+        let braceCount = 0;
+        let objectCount = 0;
+        let inString = false;
+        let escapeNext = false;
+        
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+          
+          if (char === '"' && !escapeNext) {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === '{') {
+              braceCount++;
+            } else if (char === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                objectCount++;
+              }
+            }
+          }
+        }
+        
+        // Se há mais de 1 objeto completo, provavelmente é um array
+        return objectCount > 1;
+      }
+      
+      function addMissingOpening(text, analysis) {
+        let repaired = text.trim();
+        
+        if (analysis.multipleObjects || analysis.isArray) {
+          repaired = '[' + repaired;
+        } else {
+          repaired = '{' + repaired;
+        }
+        
+        return repaired;
+      }
+      
+      function addMissingClosing(text, analysis) {
+        let repaired = text.trim();
+        
+        if (analysis.multipleObjects || analysis.isArray) {
+          repaired = repaired + ']';
+        } else {
+          repaired = repaired + '}';
         }
         
         return repaired;
@@ -910,12 +1036,19 @@
 
       function toggleView(view) {
         currentView = view;
+        
+        // Remover classe active de todos os botões
+        document.getElementById('codeBtn').classList.remove('active');
+        document.getElementById('treeBtn').classList.remove('active');
+        
         if (view === "code") {
           output.style.display = "block";
           tree.style.display = "none";
+          document.getElementById('codeBtn').classList.add('active');
         } else {
           output.style.display = "none";
           tree.style.display = "block";
+          document.getElementById('treeBtn').classList.add('active');
         }
       }
 
@@ -1057,15 +1190,68 @@
       }
 
       function buildTree(json, parent) {
-        parent.innerHTML = "";
-        const lines = [];
-        buildTreeText(json, lines, 0);
+        try {
+          parent.innerHTML = "";
+          const lines = [];
+          const lineNumbers = [];
+          buildTreeTextWithNumbers(json, lines, lineNumbers, 0, 1);
         
         lines.forEach((line, index) => {
           const lineElement = document.createElement("div");
           lineElement.className = "tree-line";
-          lineElement.textContent = line;
           lineElement.dataset.lineIndex = index;
+          
+          // Criar container para número da linha e conteúdo
+          const lineContainer = document.createElement("div");
+          lineContainer.style.display = "flex";
+          lineContainer.style.alignItems = "flex-start";
+          
+          // Número da linha
+          const lineNumber = document.createElement("span");
+          lineNumber.className = "tree-line-number";
+          lineNumber.textContent = lineNumbers[index];
+          lineNumber.style.minWidth = "30px";
+          lineNumber.style.marginRight = "8px";
+          lineNumber.style.color = "#718096";
+          lineNumber.style.fontSize = "12px";
+          lineNumber.style.userSelect = "none";
+          
+          // Conteúdo da linha
+          const lineContent = document.createElement("span");
+          lineContent.textContent = line;
+          lineContent.style.flex = "1";
+          
+          // Adicionar funcionalidade de expandir/minimizar para objetos e arrays
+          if (line.includes('{') || line.includes('[')) {
+            const expandButton = document.createElement("span");
+            expandButton.className = "tree-expand-btn";
+            expandButton.textContent = "▼"; // Começar expandido
+            expandButton.style.marginRight = "4px";
+            expandButton.style.cursor = "pointer";
+            expandButton.style.color = "#63b3ed";
+            expandButton.style.fontSize = "10px";
+            expandButton.style.userSelect = "none";
+            
+            lineContainer.appendChild(expandButton);
+            lineContainer.appendChild(lineNumber);
+            lineContainer.appendChild(lineContent);
+            
+            // Adicionar funcionalidade de expandir/minimizar
+            expandButton.onclick = (e) => {
+              e.stopPropagation();
+              const isExpanded = expandButton.textContent === "▼";
+              expandButton.textContent = isExpanded ? "▶" : "▼";
+              
+              // Toggle das linhas filhas usando uma abordagem mais robusta
+              toggleChildLines(lineElement, isExpanded);
+            };
+            
+          } else {
+            lineContainer.appendChild(lineNumber);
+            lineContainer.appendChild(lineContent);
+          }
+          
+          lineElement.appendChild(lineContainer);
           
           lineElement.onclick = () => {
             // Remover seleção anterior
@@ -1080,6 +1266,140 @@
           
           parent.appendChild(lineElement);
         });
+        
+        // Inicializar estado colapsado após todos os elementos serem criados
+        initializeCollapsedState(parent, lines);
+        
+        } catch (e) {
+          console.error('Erro ao construir árvore:', e);
+          parent.innerHTML = `<div style="color: red;">Erro ao construir visualização em árvore: ${e.message}</div>`;
+        }
+      }
+      
+      function initializeCollapsedState(parent, lines) {
+        // Iniciar com tudo expandido - não esconder nada por padrão
+        const allLines = parent.querySelectorAll('.tree-line');
+        allLines.forEach((lineElement) => {
+          const lineText = lineElement.textContent.trim();
+          if (lineText.includes('{') || lineText.includes('[')) {
+            // Usar a nova função para garantir que tudo esteja visível
+            toggleChildLines(lineElement, false); // false = expandir
+          }
+        });
+      }
+      
+      function getChildLines(parentIndex, lines) {
+        const childLines = [];
+        const parentLine = lines[parentIndex];
+        const indentLevel = getIndentLevel(parentLine);
+        
+        // Para arrays, pegar apenas as linhas imediatamente filhas (próximo nível de indentação)
+        for (let i = parentIndex + 1; i < lines.length; i++) {
+          const currentIndent = getIndentLevel(lines[i]);
+          
+          // Se a indentação é menor ou igual ao pai, paramos
+          if (currentIndent <= indentLevel) {
+            break;
+          }
+          
+          // Se a indentação é exatamente o próximo nível, é filho direto
+          if (currentIndent === indentLevel + 1) {
+            childLines.push(i);
+          }
+        }
+        
+        return childLines;
+      }
+      
+      function getIndentLevel(line) {
+        return (line.match(/^  /g) || []).length;
+      }
+      
+      function toggleChildLines(parentElement, shouldCollapse) {
+        const parentText = parentElement.textContent.trim();
+        const parentIndent = getIndentLevel(parentText);
+        const allLines = parentElement.parentElement.querySelectorAll('.tree-line');
+        
+        console.log(`Toggle para: "${parentText}" (indent: ${parentIndent}, shouldCollapse: ${shouldCollapse})`);
+        
+        // Encontrar o índice do elemento pai
+        let parentIndex = -1;
+        allLines.forEach((line, index) => {
+          if (line === parentElement) {
+            parentIndex = index;
+          }
+        });
+        
+        if (parentIndex === -1) {
+          console.log("Elemento pai não encontrado!");
+          return;
+        }
+        
+        console.log(`Índice do pai: ${parentIndex}`);
+        
+        // Encontrar e togglear as linhas filhas
+        for (let i = parentIndex + 1; i < allLines.length; i++) {
+          const childLine = allLines[i];
+          const childText = childLine.textContent.trim();
+          const childIndent = getIndentLevel(childText);
+          
+          console.log(`Verificando linha ${i}: "${childText}" (indent: ${childIndent})`);
+          
+          // Se a indentação é menor ou igual ao pai, paramos
+          if (childIndent <= parentIndent) {
+            console.log(`Parando - indentação menor ou igual ao pai`);
+            break;
+          }
+          
+          // Se é filho direto (próximo nível), togglear
+          if (childIndent === parentIndent + 1) {
+            childLine.style.display = shouldCollapse ? "none" : "flex";
+            console.log(`Toggle child: "${childText}" -> ${shouldCollapse ? 'hidden' : 'visible'}`);
+          }
+        }
+      }
+      
+      function buildTreeTextWithNumbers(obj, lines, lineNumbers, level, startLineNumber) {
+        const indent = "  ".repeat(level);
+        const isArray = Array.isArray(obj);
+        let currentLineNumber = startLineNumber;
+        
+        if (isArray) {
+          lines.push(`${indent}[`);
+          lineNumbers.push(currentLineNumber++);
+          obj.forEach((item, index) => {
+            if (typeof item === "object" && item !== null) {
+              // Para objetos dentro de arrays, apenas indicar o índice
+              lines.push(`${indent}  ${index}:`);
+              lineNumbers.push(currentLineNumber++);
+              currentLineNumber = buildTreeTextWithNumbers(item, lines, lineNumbers, level + 2, currentLineNumber);
+            } else {
+              const value = typeof item === "string" ? `"${item}"` : item;
+              lines.push(`${indent}  ${index}: ${value}`);
+              lineNumbers.push(currentLineNumber++);
+            }
+          });
+          lines.push(`${indent}]`);
+          lineNumbers.push(currentLineNumber++);
+        } else {
+          lines.push(`${indent}{`);
+          lineNumbers.push(currentLineNumber++);
+          Object.entries(obj).forEach(([key, value]) => {
+            if (typeof value === "object" && value !== null) {
+              lines.push(`${indent}  "${key}":`);
+              lineNumbers.push(currentLineNumber++);
+              currentLineNumber = buildTreeTextWithNumbers(value, lines, lineNumbers, level + 2, currentLineNumber);
+            } else {
+              const val = typeof value === "string" ? `"${value}"` : value;
+              lines.push(`${indent}  "${key}": ${val}`);
+              lineNumbers.push(currentLineNumber++);
+            }
+          });
+          lines.push(`${indent}}`);
+          lineNumbers.push(currentLineNumber++);
+        }
+        
+        return currentLineNumber;
       }
       
       function buildTreeText(obj, lines, level) {
@@ -1117,6 +1437,153 @@
       function isImageUrl(url) {
         return /\.(jpg|jpeg|png|gif|bmp|svg)$/i.test(url);
       }
+
+      // Função de teste para verificar a funcionalidade
+      function testJSONRepair() {
+        const testCases = [
+          {
+            name: "Múltiplos objetos sem colchetes",
+            json: `{"Id":893,"Descricao":"DROP TABLE","Correta":true},{"Id":894,"Descricao":"DELETE FROM","Correta":false}]`
+          },
+          {
+            name: "JSON com aspas no início e fim",
+            json: `"{"Id":893,"Descricao":"DROP TABLE","Correta":true}"`
+          },
+          {
+            name: "JSON faltando chave de abertura",
+            json: `"Id":893,"Descricao":"DROP TABLE","Correta":true}`
+          },
+          {
+            name: "JSON faltando chave de fechamento",
+            json: `{"Id":893,"Descricao":"DROP TABLE","Correta":true`
+          }
+        ];
+
+        console.log("=== TESTE DE REPARO JSON ===");
+        
+        testCases.forEach((testCase, index) => {
+          console.log(`\nTeste ${index + 1}: ${testCase.name}`);
+          console.log("Original:", testCase.json);
+          
+          try {
+            const analysis = analyzeJSONStructure(testCase.json);
+            console.log("Análise:", analysis);
+            
+            const repaired = repairBrokenJSONWithError(testCase.json, "Unexpected token");
+            console.log("Reparado:", repaired);
+            
+            try {
+              const parsed = JSON.parse(repaired);
+              console.log("✅ Válido! Tipo:", Array.isArray(parsed) ? "Array" : "Object");
+            } catch (e) {
+              console.log("❌ Ainda inválido:", e.message);
+            }
+          } catch (e) {
+            console.log("❌ Erro:", e.message);
+          }
+        });
+      }
+
+      // Disponibilizar função de teste globalmente
+      window.testJSONRepair = testJSONRepair;
+      
+      // Função de debug para a árvore
+      function debugTree() {
+        console.log("=== DEBUG ÁRVORE ===");
+        const treeElement = document.getElementById('tree');
+        const lines = treeElement.querySelectorAll('.tree-line');
+        console.log(`Total de linhas: ${lines.length}`);
+        
+        lines.forEach((line, index) => {
+          const content = line.textContent.trim();
+          const indent = getIndentLevel(content);
+          const hasExpandBtn = line.querySelector('.tree-expand-btn');
+          console.log(`Linha ${index}: "${content}" (indent: ${indent}, expand: ${!!hasExpandBtn})`);
+        });
+      }
+      
+      window.debugTree = debugTree;
+      
+      // Função para testar a minimização
+      function testTreeMinimize() {
+        console.log("=== TESTE MINIMIZAÇÃO ÁRVORE ===");
+        const treeElement = document.getElementById('tree');
+        const expandButtons = treeElement.querySelectorAll('.tree-expand-btn');
+        console.log(`Encontrados ${expandButtons.length} botões de expandir`);
+        
+        expandButtons.forEach((btn, index) => {
+          console.log(`Botão ${index}: "${btn.textContent}" - Parent: "${btn.parentElement.textContent.trim()}"`);
+        });
+      }
+      
+      window.testTreeMinimize = testTreeMinimize;
+      
+      // Função para testar com JSON de exemplo
+      function testTreeWithSampleJSON() {
+        const sampleJSON = [
+          {
+            "id": 1,
+            "name": "João",
+            "details": {
+              "age": 30,
+              "city": "São Paulo"
+            }
+          },
+          {
+            "id": 2,
+            "name": "Maria",
+            "details": {
+              "age": 25,
+              "city": "Rio de Janeiro"
+            }
+          }
+        ];
+        
+        // Inserir o JSON de teste
+        input.value = JSON.stringify(sampleJSON, null, 2);
+        formatJSON();
+        
+        // Mudar para modo árvore
+        toggleView('tree');
+        
+        console.log("JSON de teste inserido. Verifique o modo árvore.");
+      }
+      
+      window.testTreeWithSampleJSON = testTreeWithSampleJSON;
+      
+      // Função de debug detalhada para a árvore
+      function debugTreeDetailed() {
+        console.log("=== DEBUG DETALHADO DA ÁRVORE ===");
+        const treeElement = document.getElementById('tree');
+        const lines = treeElement.querySelectorAll('.tree-line');
+        console.log(`Total de linhas: ${lines.length}`);
+        
+        lines.forEach((line, index) => {
+          const content = line.textContent.trim();
+          const indent = getIndentLevel(content);
+          const hasExpandBtn = line.querySelector('.tree-expand-btn');
+          const expandBtnText = hasExpandBtn ? hasExpandBtn.textContent : 'N/A';
+          
+          console.log(`Linha ${index}: "${content}" (indent: ${indent}, expand: ${!!hasExpandBtn}, btn: "${expandBtnText}")`);
+          
+          // Mostrar estrutura HTML da linha
+          if (hasExpandBtn) {
+            console.log(`  - HTML:`, line.innerHTML);
+          }
+        });
+        
+        // Testar toggle manualmente
+        const firstExpandBtn = treeElement.querySelector('.tree-expand-btn');
+        if (firstExpandBtn) {
+          console.log("Testando toggle do primeiro botão...");
+          firstExpandBtn.click();
+          console.log("Toggle executado. Verifique se as linhas filhas foram escondidas/mostradas.");
+        } else {
+          console.log("Nenhum botão de expandir encontrado!");
+        }
+      }
+      
+      window.debugTreeDetailed = debugTreeDetailed;
     </script>
   </body>
 </html>
