@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>  <rect width='100' height='100' rx='20' fill='%232b6cb0'/>  <text x='50%' y='65%' text-anchor='middle' font-size='55' font-family='monospace' fill='white'>{}</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'> <rect width='100' height='100' rx='20' fill='%232b6cb0'/> <text x='50%' y='65%' text-anchor='middle' font-size='55' font-family='monospace' fill='white'>{}</text></svg>">
     <title>Formatador JSON</title>
     <style>
       body {
@@ -109,7 +109,7 @@
         min-width: 0;
         display: flex;
       }
-      
+     
       .line-numbers {
         background: #2d3748;
         color: #718096;
@@ -123,7 +123,7 @@
         min-width: 40px;
         flex-shrink: 0;
       }
-      
+     
       .code-content-wrapper {
         flex: 1;
         padding: 12px 12px 12px 8px;
@@ -153,7 +153,7 @@
         user-select: text;
         cursor: text;
       }
-      
+     
       .tree-line {
         display: block;
         padding: 2px 4px;
@@ -162,11 +162,11 @@
         cursor: pointer;
         transition: background-color 0.2s;
       }
-      
+     
       .tree-line:hover {
         background-color: #2d3748;
       }
-      
+     
       .tree-line.selected {
         background-color: #4299e1;
         color: #fff;
@@ -348,31 +348,31 @@
         margin-bottom: 8px;
         display: block;
       }
-      
+     
       /* Scrollbar personalizada para modo dark */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
-      
+     
       ::-webkit-scrollbar-track {
         background: #2d3748;
         border-radius: 4px;
       }
-      
+     
       ::-webkit-scrollbar-thumb {
         background: #4a5568;
         border-radius: 4px;
       }
-      
+     
       ::-webkit-scrollbar-thumb:hover {
         background: #718096;
       }
-      
+     
       ::-webkit-scrollbar-corner {
         background: #2d3748;
       }
-      
+     
       /* Para Firefox */
       * {
         scrollbar-width: thin;
@@ -384,7 +384,25 @@
         min-height: 21px;
         line-height: 1.5;
       }
-      
+      .indentation {
+        display: inline-flex;
+        pointer-events: none;
+      }
+      .indent-unit {
+        display: inline-block;
+        position: relative;
+        width: var(--indent-width, 24px);
+        height: 100%;
+      }
+      .indent-unit::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        border-left: 1px dotted rgba(113, 128, 150, 0.6);
+      }
+     
       .line-number {
         background: #2d3748;
         color: #718096;
@@ -401,7 +419,7 @@
         justify-content: flex-start;
         gap: 10px;
       }
-      
+     
       .line-content {
         flex: 1;
         padding: 0 12px 0 8px;
@@ -410,7 +428,7 @@
         overflow-wrap: break-word;
         white-space: pre-wrap;
       }
-      
+     
       .code-collapsible {
         cursor: pointer;
         user-select: none;
@@ -433,18 +451,18 @@
       .code-collapsible.open + .code-content {
         display: block;
       }
-      
+     
       .collapsed-summary {
         cursor: pointer;
         color: #63b3ed;
         font-style: italic;
         transition: color 0.2s;
       }
-      
+     
       .collapsed-summary:hover {
         color: #90cdf4;
       }
-      
+     
       #searchInput {
         padding: 6px 8px;
         border-radius: 6px;
@@ -455,12 +473,12 @@
         margin-left: 6px;
         transition: border-color 0.2s;
       }
-      
+     
       #searchInput:focus {
         outline: none;
         border-color: #63b3ed;
       }
-      
+     
       .search-highlight {
         background-color: #ffd700;
         color: #1a202c;
@@ -468,7 +486,7 @@
         border-radius: 2px;
         font-weight: bold;
       }
-      
+     
       .search-result {
         background-color: #2b6cb0;
         color: #fff;
@@ -483,7 +501,7 @@
           max-width: 450px;
         }
       }
-      
+     
       @media (max-width: 1024px) {
         .container {
           gap: 10px;
@@ -494,7 +512,7 @@
           max-width: 400px;
         }
       }
-      
+     
       @media (max-width: 768px) {
         .container {
           flex-direction: column;
@@ -513,7 +531,7 @@
           min-height: 300px;
         }
       }
-      
+     
       @media (max-width: 480px) {
         .container {
           padding: 0 5px;
@@ -543,7 +561,6 @@
       <div class="editor">
         <div class="controls">
           <button onclick="formatJSON()">Formatar</button>
-          <!-- <button onclick="repairJSON()">Reparar</button> -->
           <input
             type="file"
             id="upload"
@@ -575,7 +592,6 @@
         <div class="tree-view" id="tree" style="display: none"></div>
       </div>
     </div>
-
     <script>
       const input = document.getElementById("input");
       const output = document.getElementById("output");
@@ -583,48 +599,34 @@
       const error = document.getElementById("error");
       const indentSelect = document.getElementById("indent");
       let currentView = "code";
-      let formattedJSON = ""; // Armazena o JSON formatado
-
-      // Carregar do armazenamento local
+      let formattedJSON = "";
       window.onload = () => {
         const saved = localStorage.getItem("jsonData");
         if (saved) {
           input.value = saved;
           formatJSON();
         }
-        // Definir botão "Código" como ativo por padrão
         document.getElementById('codeBtn').classList.add('active');
       };
-
       function formatJSON() {
         let text = input.value.trim();
         error.innerHTML = "";
-        
-        // Usar a mesma lógica simples do JSON Formatter
         text = simpleCleanJSON(text);
-        
         try {
           let json = text;
-          // Tentar parsear múltiplos níveis de strings JSON (como o JSON Formatter faz)
           while (typeof json === "string") {
             json = JSON.parse(json);
           }
           const indent = parseInt(indentSelect.value);
           formattedJSON = JSON.stringify(json, null, indent);
-          buildCodeView(json, output, indent * 2);
+          buildCodeView(json, output, indent);
           buildTree(json, tree);
           localStorage.setItem("jsonData", input.value);
-          
-          // Mostrar mensagem de sucesso se houve limpeza
           if (text !== input.value.trim()) {
             showMessage("JSON formatado e limpo automaticamente!", "success");
           }
         } catch (e) {
-          console.log("Erro ao parsear JSON:", e.message);
-          console.log("Posição do erro:", e.message.match(/position \d+/)?.[0]);
-          
           let errorMessage = e.message;
-          // Traduzir mensagens de erro para o português
           if (errorMessage.includes("Unexpected non-whitespace character after JSON")) {
             errorMessage = "Caractere inesperado após o JSON na posição " + (e.message.match(/position \d+/)?.[0]?.replace("position ", "") || "");
           } else if (errorMessage.includes("Unexpected token")) {
@@ -642,596 +644,14 @@
           formattedJSON = "";
         }
       }
-
-      function repairJSON() {
-        let text = input.value.trim();
-        error.innerHTML = "";
-        
-        // Usar a mesma lógica simples do JSON Formatter
-        text = simpleCleanJSON(text);
-        
-        try {
-          // Tentar parsear primeiro
-          let json = text;
-          while (typeof json === "string") {
-            json = JSON.parse(json);
-          }
-          // Se chegou aqui, o JSON já está válido
-          showMessage("JSON já está válido!", "success");
-          formatJSON();
-          return;
-        } catch (e) {
-          // Se falhou, tentar reparar usando a mensagem de erro específica
-          const repaired = repairBrokenJSONWithError(text, e.message);
-          if (repaired !== text) {
-            // Mostrar o JSON reparado em vermelho com botão de aceitar
-            showRepairedJSON(repaired, text);
-          } else {
-            showMessage("Não foi possível reparar o JSON automaticamente. Verifique a sintaxe manualmente.", "error");
-          }
-        }
-      }
-
-      function showRepairedJSON(repairedJSON, originalJSON) {
-        // Armazenar o JSON reparado globalmente para uso posterior
-        window.currentRepairedJSON = repairedJSON;
-        
-        // Formatar o JSON reparado para exibição
-        let formattedRepaired;
-        try {
-          const parsed = JSON.parse(repairedJSON);
-          const indent = parseInt(indentSelect.value);
-          formattedRepaired = JSON.stringify(parsed, null, indent);
-        } catch (e) {
-          formattedRepaired = repairedJSON;
-        }
-
-        // Criar o HTML para mostrar o JSON reparado
-        const previewHTML = `
-          <div class="json-preview">
-            <button class="accept-correction-btn" onclick="acceptCorrection()">
-              Aceitar Correção
-            </button>
-            <span class="correction-label">JSON Reparado (clique em "Aceitar Correção" para aplicar):</span>
-            ${escapeHtml(formattedRepaired)}
-          </div>
-        `;
-        
-        error.innerHTML = previewHTML;
-      }
-
-      function acceptCorrection() {
-        // Aplicar a correção no campo de entrada
-        if (window.currentRepairedJSON) {
-          input.value = window.currentRepairedJSON;
-          
-          // Limpar a área de erro
-          error.innerHTML = "";
-          
-          // Formatar o JSON automaticamente
-          formatJSON();
-          
-          // Mostrar mensagem de sucesso
-          showMessage("Correção aplicada com sucesso!", "success");
-          
-          // Limpar a variável global
-          window.currentRepairedJSON = null;
-        }
-      }
-
-      function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-      }
-
-      function repairBrokenJSONWithError(text, errorMessage) {
-        let repaired = text;
-        
-        // Primeiro, tentar reparar HTML escapado
-        repaired = repairEscapedHTML(repaired);
-        
-        // Tentar reparar especificamente o campo HtmlEmail se existir
-        if (repaired.includes('HtmlEmail')) {
-          repaired = repairHtmlEmailField(repaired);
-        }
-        
-        // Análise inteligente da estrutura
-        const analysis = analyzeJSONStructure(repaired);
-        
-        // Reparar baseado na análise
-        if (analysis.multipleObjects && !analysis.hasOpeningBracket && !analysis.hasClosingBracket) {
-          // Múltiplos objetos sem colchetes - adicionar colchetes de array
-          repaired = '[' + repaired + ']';
-        } else if (analysis.needsOpeningBracket && analysis.hasClosingBracket) {
-          // Falta colchete/chave de abertura
-          repaired = addMissingOpening(repaired, analysis);
-        } else if (analysis.needsClosingBracket && analysis.hasOpeningBracket) {
-          // Falta colchete/chave de fechamento
-          repaired = addMissingClosing(repaired, analysis);
-        } else if (analysis.missingCommas > 0) {
-          // Falta vírgulas
-          repaired = repairMissingCommas(repaired);
-        } else {
-          // Tentar reparo geral
-          repaired = repairBrokenJSON(repaired);
-        }
-        
-        // Se ainda não funcionou, tentar abordagem específica baseada no erro
-        if (repaired === text) {
-          if (errorMessage.includes("Expected ',' or ']'") || errorMessage.includes("Expected ',' or '}'")) {
-            repaired = trySpecificRepair(repaired, errorMessage);
-          }
-        }
-        
-        return repaired;
-      }
-      
-      function analyzeJSONStructure(text) {
-        const trimmed = text.trim();
-        const openBraces = (trimmed.match(/\{/g) || []).length;
-        const closeBraces = (trimmed.match(/\}/g) || []).length;
-        const openBrackets = (trimmed.match(/\[/g) || []).length;
-        const closeBrackets = (trimmed.match(/\]/g) || []).length;
-        
-        const startsWithBrace = trimmed.startsWith('{');
-        const startsWithBracket = trimmed.startsWith('[');
-        const endsWithBrace = trimmed.endsWith('}');
-        const endsWithBracket = trimmed.endsWith(']');
-        
-        const hasOpeningBracket = startsWithBrace || startsWithBracket;
-        const hasClosingBracket = endsWithBrace || endsWithBracket;
-        
-        // Detectar múltiplos objetos separados por vírgulas
-        const multipleObjects = detectMultipleObjects(trimmed);
-        
-        const needsOpeningBracket = !hasOpeningBracket && (closeBraces > 0 || closeBrackets > 0);
-        const needsClosingBracket = !hasClosingBracket && (openBraces > 0 || openBrackets > 0);
-        
-        // Contar vírgulas faltando (aproximação)
-        const missingCommas = Math.max(0, Math.max(openBraces - closeBraces, openBrackets - closeBrackets));
-        
-        return {
-          openBraces,
-          closeBraces,
-          openBrackets,
-          closeBrackets,
-          hasOpeningBracket,
-          hasClosingBracket,
-          needsOpeningBracket,
-          needsClosingBracket,
-          missingCommas,
-          multipleObjects,
-          isArray: startsWithBracket || (!startsWithBrace && !startsWithBracket && closeBrackets > 0) || multipleObjects,
-          isObject: startsWithBrace || (!startsWithBracket && !startsWithBrace && closeBraces > 0)
-        };
-      }
-      
-      function detectMultipleObjects(text) {
-        // Contar quantos objetos completos existem
-        let braceCount = 0;
-        let objectCount = 0;
-        let inString = false;
-        let escapeNext = false;
-        
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          
-          if (escapeNext) {
-            escapeNext = false;
-            continue;
-          }
-          
-          if (char === '\\') {
-            escapeNext = true;
-            continue;
-          }
-          
-          if (char === '"' && !escapeNext) {
-            inString = !inString;
-            continue;
-          }
-          
-          if (!inString) {
-            if (char === '{') {
-              braceCount++;
-            } else if (char === '}') {
-              braceCount--;
-              if (braceCount === 0) {
-                objectCount++;
-              }
-            }
-          }
-        }
-        
-        // Se há mais de 1 objeto completo, provavelmente é um array
-        return objectCount > 1;
-      }
-      
-      function addMissingOpening(text, analysis) {
-        let repaired = text.trim();
-        
-        if (analysis.multipleObjects || analysis.isArray) {
-          repaired = '[' + repaired;
-        } else {
-          repaired = '{' + repaired;
-        }
-        
-        return repaired;
-      }
-      
-      function addMissingClosing(text, analysis) {
-        let repaired = text.trim();
-        
-        if (analysis.multipleObjects || analysis.isArray) {
-          repaired = repaired + ']';
-        } else {
-          repaired = repaired + '}';
-        }
-        
-        return repaired;
-      }
-
       function simpleCleanJSON(text) {
-        // Usar a mesma lógica simples do JSON Formatter
-        // Apenas remover espaços em branco no início e fim
         text = text.trim();
-        
-        // Remover aspas externas se existirem (como o JSON Formatter faz)
-        if ((text.startsWith('"') && text.endsWith('"')) || 
+        if ((text.startsWith('"') && text.endsWith('"')) ||
             (text.startsWith("'") && text.endsWith("'"))) {
           text = text.slice(1, -1);
         }
-        
         return text;
       }
-
-      function smartCleanJSON(text) {
-        // Primeiro, diagnosticar o problema
-        console.log("=== DIAGNÓSTICO JSON ===");
-        console.log("Texto original:", text.substring(0, 50) + "...");
-        console.log("Primeiros 20 caracteres:", JSON.stringify(text.substring(0, 20)));
-        
-        // Primeiro, corrigir a estrutura JSON
-        text = fixJSONStructure(text);
-        console.log("Após correção de estrutura:", text.substring(0, 50) + "...");
-        
-        // Remover aspas externas se existirem
-        if ((text.startsWith('"') && text.endsWith('"')) || 
-            (text.startsWith("'") && text.endsWith("'"))) {
-          console.log("Removendo aspas externas");
-          text = text.slice(1, -1);
-        }
-        
-        // Primeiro, tentar identificar e corrigir problemas específicos com HTML escapado
-        // Tratar casos onde HTML dentro de strings JSON tem aspas não escapadas
-        
-        // Detectar se há HTML dentro de strings JSON
-        const hasHtmlInStrings = text.includes('<') && text.includes('>') && text.includes('"');
-        
-        if (hasHtmlInStrings) {
-          console.log("Detectado HTML em strings - aplicando correções específicas");
-          // Aplicar correções específicas para HTML escapado
-          text = repairEscapedHTML(text);
-        } else {
-          console.log("JSON sem HTML - aplicando limpeza simples");
-          // Para JSON sem HTML, aplicar limpeza mais simples
-          // Remover escapes desnecessários
-          text = text.replace(/\\"/g, '"').replace(/\\'/g, "'");
-          
-          // Corrigir escapes de barras em URLs e HTML
-          text = text.replace(/\\\//g, '/');
-          
-          // Corrigir escapes de caracteres especiais em HTML
-          text = text.replace(/\\n/g, '\n');
-          text = text.replace(/\\t/g, '\t');
-          text = text.replace(/\\r/g, '\r');
-        }
-        
-        // Remover quebras de linha desnecessárias no início e fim
-        text = text.trim();
-        
-        console.log("Texto após limpeza:", text.substring(0, 50) + "...");
-        console.log("=== FIM DIAGNÓSTICO ===");
-        
-        return text;
-      }
-
-      function repairBrokenJSON(text) {
-        let repaired = text;
-        let changes = [];
-        
-        // Primeiro, tentar reparar HTML escapado em strings
-        repaired = repairEscapedHTML(repaired);
-        
-        // Depois, tentar reparar vírgulas faltando antes de fechar arrays/objetos
-        repaired = repairMissingCommas(repaired);
-        
-        // Contar chaves e colchetes
-        const openBraces = (repaired.match(/\{/g) || []).length;
-        const closeBraces = (repaired.match(/\}/g) || []).length;
-        const openBrackets = (repaired.match(/\[/g) || []).length;
-        const closeBrackets = (repaired.match(/\]/g) || []).length;
-        
-        // Adicionar chaves faltando
-        if (openBraces > closeBraces) {
-          const missingBraces = openBraces - closeBraces;
-          repaired += '}'.repeat(missingBraces);
-          changes.push(`${missingBraces} chave(s) de fechamento adicionada(s)`);
-        }
-        
-        // Adicionar colchetes faltando
-        if (openBrackets > closeBrackets) {
-          const missingBrackets = openBrackets - closeBrackets;
-          repaired += ']'.repeat(missingBrackets);
-          changes.push(`${missingBrackets} colchete(s) de fechamento adicionado(s)`);
-        }
-        
-        // Verificar se o JSON agora é válido
-        try {
-          JSON.parse(repaired);
-          return repaired;
-        } catch (e) {
-          // Se ainda não funcionou, tentar uma abordagem mais agressiva
-          return tryAdvancedRepair(text);
-        }
-      }
-      
-      function repairEscapedHTML(text) {
-        let repaired = text;
-        
-        // Primeiro, corrigir escapes de barras em URLs
-        repaired = repaired.replace(/\\\//g, '/');
-        
-        // Corrigir escapes de caracteres especiais
-        repaired = repaired.replace(/\\n/g, '\n');
-        repaired = repaired.replace(/\\t/g, '\t');
-        repaired = repaired.replace(/\\r/g, '\r');
-        
-        // Corrigir escapes de caracteres especiais em HTML
-        repaired = repaired.replace(/\\</g, '<');
-        repaired = repaired.replace(/\\>/g, '>');
-        repaired = repaired.replace(/\\&/g, '&');
-        
-        // CORREÇÃO PRINCIPAL: Escapar aspas não escapadas em atributos HTML
-        // Este é o problema principal - aspas dentro de strings JSON que contêm HTML
-        
-        // Primeiro, tratar aspas simples que podem estar causando problemas
-        repaired = repaired.replace(/target='([^']*)'/g, 'target=\\"$1\\"');
-        repaired = repaired.replace(/rel='([^']*)'/g, 'rel=\\"$1\\"');
-        repaired = repaired.replace(/href='([^']*)'/g, 'href=\\"$1\\"');
-        repaired = repaired.replace(/src='([^']*)'/g, 'src=\\"$1\\"');
-        
-        // Depois, tratar aspas duplas não escapadas em atributos HTML
-        repaired = repaired.replace(/target="([^"]*)"/g, 'target=\\"$1\\"');
-        repaired = repaired.replace(/rel="([^"]*)"/g, 'rel=\\"$1\\"');
-        repaired = repaired.replace(/href="([^"]*)"/g, 'href=\\"$1\\"');
-        repaired = repaired.replace(/src="([^"]*)"/g, 'src=\\"$1\\"');
-        
-        // Corrigir outros atributos HTML comuns
-        repaired = repaired.replace(/class="([^"]*)"/g, 'class=\\"$1\\"');
-        repaired = repaired.replace(/id="([^"]*)"/g, 'id=\\"$1\\"');
-        repaired = repaired.replace(/style="([^"]*)"/g, 'style=\\"$1\\"');
-        repaired = repaired.replace(/alt="([^"]*)"/g, 'alt=\\"$1\\"');
-        repaired = repaired.replace(/title="([^"]*)"/g, 'title=\\"$1\\"');
-        
-        // Tratar casos especiais onde aspas podem estar mal escapadas
-        repaired = repaired.replace(/([^\\])"/g, '$1\\"'); // Escapar aspas não escapadas
-        repaired = repaired.replace(/^"/g, '\\"'); // Escapar aspas no início
-        repaired = repaired.replace(/"$/g, '\\"'); // Escapar aspas no final
-        
-        // Corrigir escapes duplos que podem ter sido criados
-        repaired = repaired.replace(/\\\\"/g, '\\"');
-        repaired = repaired.replace(/\\\\\\"/g, '\\"'); // Tratar escapes triplos
-        
-        return repaired;
-      }
-
-      function repairHtmlEmailField(text) {
-        // Função específica para reparar o campo HtmlEmail que está causando problemas
-        let repaired = text;
-        
-        // Encontrar o campo HtmlEmail e reparar especificamente
-        const htmlEmailRegex = /"HtmlEmail"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g;
-        
-        repaired = repaired.replace(htmlEmailRegex, (match, content) => {
-          // Escapar aspas não escapadas dentro do conteúdo HTML
-          let escapedContent = content;
-          
-          // Tratar aspas não escapadas em atributos HTML
-          escapedContent = escapedContent.replace(/target="([^"]*)"/g, 'target=\\"$1\\"');
-          escapedContent = escapedContent.replace(/rel="([^"]*)"/g, 'rel=\\"$1\\"');
-          escapedContent = escapedContent.replace(/href="([^"]*)"/g, 'href=\\"$1\\"');
-          escapedContent = escapedContent.replace(/src="([^"]*)"/g, 'src=\\"$1\\"');
-          
-          // Tratar outros atributos HTML comuns
-          escapedContent = escapedContent.replace(/class="([^"]*)"/g, 'class=\\"$1\\"');
-          escapedContent = escapedContent.replace(/id="([^"]*)"/g, 'id=\\"$1\\"');
-          escapedContent = escapedContent.replace(/style="([^"]*)"/g, 'style=\\"$1\\"');
-          escapedContent = escapedContent.replace(/alt="([^"]*)"/g, 'alt=\\"$1\\"');
-          escapedContent = escapedContent.replace(/title="([^"]*)"/g, 'title=\\"$1\\"');
-          
-          // Tratar aspas não escapadas que não estão em atributos
-          escapedContent = escapedContent.replace(/([^\\])"/g, '$1\\"');
-          
-          // Corrigir escapes duplos
-          escapedContent = escapedContent.replace(/\\\\"/g, '\\"');
-          
-          return `"HtmlEmail": "${escapedContent}"`;
-        });
-        
-        return repaired;
-      }
-
-      function fixJSONStructure(text) {
-        // Função para corrigir problemas de estrutura JSON
-        let fixed = text;
-        
-        // Remover caracteres invisíveis ou problemáticos no início
-        fixed = fixed.replace(/^[\s\u00A0\u2000-\u200F\u2028-\u202F\u205F-\u206F\u3000\uFEFF]+/, '');
-        
-        // Garantir que comece com { ou [
-        if (!fixed.startsWith('{') && !fixed.startsWith('[')) {
-          // Tentar encontrar onde começa o JSON real
-          const firstBrace = fixed.indexOf('{');
-          const firstBracket = fixed.indexOf('[');
-          
-          if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-            fixed = fixed.substring(firstBrace);
-          } else if (firstBracket !== -1) {
-            fixed = fixed.substring(firstBracket);
-          } else {
-            // Se não encontrar { ou [, tentar adicionar
-            if (fixed.includes(':') || fixed.includes('"')) {
-              fixed = '{' + fixed;
-            } else {
-              fixed = '[' + fixed;
-            }
-          }
-        }
-        
-        // Garantir que termine com } ou ]
-        if (!fixed.endsWith('}') && !fixed.endsWith(']')) {
-          // Tentar encontrar onde termina o JSON real
-          const lastBrace = fixed.lastIndexOf('}');
-          const lastBracket = fixed.lastIndexOf(']');
-          
-          if (lastBrace !== -1 && (lastBracket === -1 || lastBrace > lastBracket)) {
-            fixed = fixed.substring(0, lastBrace + 1);
-          } else if (lastBracket !== -1) {
-            fixed = fixed.substring(0, lastBracket + 1);
-          } else {
-            // Se não encontrar } ou ], tentar adicionar
-            if (fixed.includes(':') || fixed.includes('"')) {
-              fixed = fixed + '}';
-            } else {
-              fixed = fixed + ']';
-            }
-          }
-        }
-        
-        return fixed;
-      }
-
-      function repairMissingCommas(text) {
-        let repaired = text;
-        
-        // Reparar vírgulas faltando antes de fechar arrays/objetos
-        // Padrão: elemento seguido de } ou ] sem vírgula
-        repaired = repaired.replace(/([^,}\]])\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-        
-        // Reparar vírgulas faltando entre elementos de array/objeto
-        repaired = repaired.replace(/([}\]])\s*([{\[])/g, '$1,$2');
-        
-        // Reparar vírgulas faltando entre strings, números, etc.
-        repaired = repaired.replace(/([^,}\]])\s*([{\[])/g, '$1,$2');
-        
-        // Reparar vírgulas faltando após strings não fechadas
-        repaired = repaired.replace(/"\s*([}\]])(?=\s*[}\]]|$)/g, '",$1');
-        
-        // Reparar vírgulas faltando após números
-        repaired = repaired.replace(/(\d+)\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-        
-        // Reparar vírgulas faltando após booleanos/null
-        repaired = repaired.replace(/(true|false|null)\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-        
-        return repaired;
-      }
-
-      function tryAdvancedRepair(text) {
-        let repaired = text.trim();
-        
-        // Primeiro, tentar reparar vírgulas mais agressivamente
-        repaired = repairMissingCommas(repaired);
-        
-        // Se não começa com { ou [, adicionar
-        if (!repaired.startsWith('{') && !repaired.startsWith('[')) {
-          // Tentar determinar se deveria ser objeto ou array
-          if (repaired.includes(':') || repaired.includes('"')) {
-            repaired = '{' + repaired;
-          } else {
-            repaired = '[' + repaired;
-          }
-        }
-        
-        // Se não termina com } ou ], adicionar
-        if (!repaired.endsWith('}') && !repaired.endsWith(']')) {
-          // Tentar determinar se deveria ser objeto ou array
-          if (repaired.includes(':') || repaired.includes('"')) {
-            repaired = repaired + '}';
-          } else {
-            repaired = repaired + ']';
-          }
-        }
-        
-        // Tentar uma última vez reparar vírgulas após adicionar chaves/colchetes
-        repaired = repairMissingCommas(repaired);
-        
-        // Verificar se agora é válido
-        try {
-          JSON.parse(repaired);
-          return repaired;
-        } catch (e) {
-          // Se ainda não funcionou, tentar uma abordagem mais específica baseada no erro
-          return trySpecificRepair(text, e.message);
-        }
-      }
-
-      function trySpecificRepair(text, errorMessage) {
-        let repaired = text.trim();
-        
-        // Se o erro menciona "Expected ',' or ']'", tentar adicionar vírgulas mais especificamente
-        if (errorMessage.includes("Expected ',' or ']'")) {
-          // Primeiro, tentar adicionar vírgulas em posições específicas
-          repaired = repaired.replace(/([^,}\]])\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-          
-          // Reparar vírgulas faltando após strings, números, booleanos, null
-          repaired = repaired.replace(/"\s*([}\]])(?=\s*[}\]]|$)/g, '",$1');
-          repaired = repaired.replace(/(\d+)\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-          repaired = repaired.replace(/(true|false|null)\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-          
-          // Se ainda não tem colchete de fechamento, adicionar
-          const openBrackets = (repaired.match(/\[/g) || []).length;
-          const closeBrackets = (repaired.match(/\]/g) || []).length;
-          if (openBrackets > closeBrackets) {
-            repaired += ']';
-          }
-        }
-        
-        // Se o erro menciona "Expected ',' or '}'", tentar adicionar vírgulas em objetos
-        if (errorMessage.includes("Expected ',' or '}'")) {
-          repaired = repaired.replace(/([^,}\]])\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-          
-          // Reparar vírgulas faltando após strings, números, booleanos, null
-          repaired = repaired.replace(/"\s*([}\]])(?=\s*[}\]]|$)/g, '",$1');
-          repaired = repaired.replace(/(\d+)\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-          repaired = repaired.replace(/(true|false|null)\s*([}\]])(?=\s*[}\]]|$)/g, '$1,$2');
-          
-          // Se ainda não tem chave de fechamento, adicionar
-          const openBraces = (repaired.match(/\{/g) || []).length;
-          const closeBraces = (repaired.match(/\}/g) || []).length;
-          if (openBraces > closeBraces) {
-            repaired += '}';
-          }
-        }
-        
-        return repaired;
-      }
-
-      function showMessage(message, type) {
-        const messageClass = type === "error" ? "json-error" : 
-                           type === "repair" ? "json-repaired" : 
-                           "json-repaired";
-        error.innerHTML = `<div class="${messageClass}">${message}</div>`;
-        
-        // Limpar mensagem após 5 segundos
-        setTimeout(() => {
-          if (error.innerHTML.includes(message)) {
-            error.innerHTML = "";
-          }
-        }, 5000);
-      }
-
       function uploadFile() {
         const file = document.getElementById("upload").files[0];
         if (file) {
@@ -1243,7 +663,6 @@
           reader.readAsText(file);
         }
       }
-
       function downloadJSON() {
         let text;
         try {
@@ -1265,7 +684,6 @@
         a.click();
         URL.revokeObjectURL(url);
       }
-
       function copyJSON() {
         if (!formattedJSON) {
           showMessage("Erro: Nenhum JSON formatado para copiar", "error");
@@ -1277,14 +695,10 @@
           showMessage("Erro: Falha ao copiar o JSON", "error");
         });
       }
-
       function toggleView(view) {
         currentView = view;
-        
-        // Remover classe active de todos os botões
         document.getElementById('codeBtn').classList.remove('active');
         document.getElementById('treeBtn').classList.remove('active');
-        
         if (view === "code") {
           output.style.display = "block";
           tree.style.display = "none";
@@ -1295,63 +709,49 @@
           document.getElementById('treeBtn').classList.add('active');
         }
       }
-
       let globalLineNumber = 1;
-
       function buildCodeView(json, parent, indent = 4, level = 0) {
         parent.innerHTML = "";
         globalLineNumber = 1;
         buildObjectRecursive(json, parent, indent, level);
       }
-
-      function buildObjectRecursive(obj, parent, indent, level, needsComma = false) {
+      function buildObjectRecursive(obj, parent, indent, level, needsComma = false, key = null) {
         const isArray = Array.isArray(obj);
-
-        // Abrir chave/colchete
-        const openLine = createCodeLine(globalLineNumber++, level * indent, true);
+        const openLine = createCodeLine(globalLineNumber++, level, indent, true);
+        const lineContent = openLine.querySelector('.line-content');
+        if (key !== null) {
+          const keySpan = document.createElement("span");
+          keySpan.className = "key";
+          keySpan.textContent = `"${key}": `;
+          lineContent.appendChild(keySpan);
+        }
         const openSpan = document.createElement("span");
         openSpan.textContent = isArray ? "[" : "{";
-        openLine.querySelector('.line-content').appendChild(openSpan);
+        lineContent.appendChild(openSpan);
+        openLine.dataset.originalContent = lineContent.innerHTML;
         parent.appendChild(openLine);
-        
-        // Armazenar se precisa de vírgula
         openLine.dataset.needsComma = needsComma;
-
-        // Conteúdo
         const content = document.createElement("div");
         content.className = "code-content";
         content.style.display = "block";
-
         const entries = isArray
-          ? obj.map((v, i) => [i, v])
+          ? obj.map((v) => [null, v])
           : Object.entries(obj);
-
         entries.forEach(([key, value], index) => {
+          const isLast = index === entries.length - 1;
           if (value !== null && typeof value === "object") {
-            // Para objetos/arrays aninhados
-            if (!isArray) {
-              const keyLine = createCodeLine(globalLineNumber++, (level + 1) * indent);
-              const keySpan = document.createElement("span");
-              keySpan.className = "key";
-              keySpan.textContent = `"${key}": `;
-              keyLine.querySelector('.line-content').appendChild(keySpan);
-              content.appendChild(keyLine);
-            }
-            
-            // Construir o objeto/array aninhado
-            const needsComma = index < entries.length - 1;
-            buildObjectRecursive(value, content, indent, level + 1, needsComma);
+            const childLevel = level + 1;
+            const childNeedsComma = !isLast;
+            const childKey = isArray ? null : key;
+            buildObjectRecursive(value, content, indent, childLevel, childNeedsComma, childKey);
           } else {
-            // Para valores simples
-            const line = createCodeLine(globalLineNumber++, (level + 1) * indent);
-
-            if (!isArray) {
+            const line = createCodeLine(globalLineNumber++, level + 1, indent);
+            if (!isArray && key !== null) {
               const keySpan = document.createElement("span");
               keySpan.className = "key";
               keySpan.textContent = `"${key}": `;
               line.querySelector('.line-content').appendChild(keySpan);
             }
-
             const valSpan = document.createElement("span");
             valSpan.className = typeof value;
             valSpan.textContent = JSON.stringify(value);
@@ -1369,280 +769,189 @@
             } else {
               line.querySelector('.line-content').appendChild(valSpan);
             }
-            
-            // Adicionar vírgula após o valor se não for o último elemento
-            if (index < entries.length - 1) {
+            if (!isLast) {
               line.querySelector('.line-content').appendChild(document.createTextNode(","));
             }
-            
             content.appendChild(line);
           }
         });
-
         parent.appendChild(content);
-
-        // Fechar chave/colchete
-        const closeLine = createCodeLine(globalLineNumber++, level * indent);
-        closeLine.querySelector('.line-content').textContent = isArray ? "]" : "}";
+        const closeLine = createCodeLine(globalLineNumber++, level, indent);
+        const closeContent = closeLine.querySelector('.line-content');
+        const closingSpan = document.createElement("span");
+        closingSpan.textContent = (isArray ? "]" : "}") + (needsComma ? "," : "");
+        closeContent.appendChild(closingSpan);
         parent.appendChild(closeLine);
-
-        // Toggle
         const collapsible = openLine.querySelector('.code-collapsible');
-        
-        // Função para expandir/colapsar
         const toggleContent = () => {
           const isOpen = content.style.display !== "none";
           content.style.display = isOpen ? "none" : "block";
-          closeLine.style.display = isOpen ? "none" : "block";
+          closeLine.style.display = isOpen ? "none" : "flex";
           collapsible.classList.toggle("open");
-          
-          // Atualizar o texto da linha quando colapsar
           if (isOpen) {
-            const summary = isArray ? `[...]` : `{...}`;
-            const needsComma = openLine.dataset.needsComma === 'true';
+            const indentHtml = openLine.querySelector('.line-content .indentation')?.outerHTML || "";
+            openLine.dataset.indentHtml = indentHtml;
+            const summaryBase = isArray ? `[...]` : `{...}`;
+            const summary = key !== null ? `"${key}": ${summaryBase}` : summaryBase;
             const finalSummary = needsComma ? `${summary},` : summary;
-            openLine.querySelector('.line-content').innerHTML = `<span class="collapsed-summary">${finalSummary}</span>`;
+            openLine.querySelector('.line-content').innerHTML = `${indentHtml}<span class="collapsed-summary">${finalSummary}</span>`;
           } else {
-            // Restaurar o conteúdo original - apenas o span dentro do line-content
-            const originalSpan = document.createElement("span");
-            originalSpan.textContent = isArray ? "[" : "{";
-            openLine.querySelector('.line-content').innerHTML = "";
-            openLine.querySelector('.line-content').appendChild(originalSpan);
-            
-            // Garantir que a linha de fechamento seja exibida corretamente
+            openLine.querySelector('.line-content').innerHTML = openLine.dataset.originalContent || "";
             closeLine.style.display = "flex";
           }
         };
-        
-        // Clique na seta
         collapsible.onclick = (e) => {
           e.stopPropagation();
           toggleContent();
         };
-        
-        // Clique na linha quando colapsada
         openLine.onclick = (e) => {
-          // Só expandir se estiver colapsado e não clicou na seta
           if (content.style.display === "none" && !e.target.classList.contains('code-collapsible')) {
             toggleContent();
           }
         };
       }
-
-      function createCodeLine(lineNum, marginLeft, hasCollapsible = false) {
+      function createCodeLine(lineNum, level, indentSize, hasCollapsible = false) {
         const line = document.createElement("div");
         line.className = "code-line";
-        
         const lineNumber = document.createElement("div");
         lineNumber.className = "line-number";
-        
         const numberSpan = document.createElement("span");
         numberSpan.textContent = lineNum;
         lineNumber.appendChild(numberSpan);
-        
         if (hasCollapsible) {
           const collapsible = document.createElement("span");
           collapsible.className = "code-collapsible";
           lineNumber.appendChild(collapsible);
         }
-        
         const lineContent = document.createElement("div");
         lineContent.className = "line-content";
-        lineContent.style.marginLeft = `${marginLeft}px`;
-        
+        if (level > 0) {
+          const indentContainer = document.createElement("span");
+          indentContainer.className = "indentation";
+          const baseIndentPx = 6;
+          for (let i = 0; i < level; i++) {
+            const indentUnit = document.createElement("span");
+            indentUnit.className = "indent-unit";
+            indentUnit.style.width = `${indentSize * baseIndentPx}px`;
+            indentUnit.style.setProperty("--indent-width", `${indentSize * baseIndentPx}px`);
+            indentContainer.appendChild(indentUnit);
+          }
+          lineContent.appendChild(indentContainer);
+        }
         line.appendChild(lineNumber);
         line.appendChild(lineContent);
-        
         return line;
       }
-
       function buildTree(json, parent) {
         try {
           parent.innerHTML = "";
           const lines = [];
           const lineNumbers = [];
           buildTreeTextWithNumbers(json, lines, lineNumbers, 0, 1);
-        
-        lines.forEach((line, index) => {
-          const lineElement = document.createElement("div");
-          lineElement.className = "tree-line";
-          lineElement.dataset.lineIndex = index;
-          
-          // Criar container para número da linha e conteúdo
-          const lineContainer = document.createElement("div");
-          lineContainer.style.display = "flex";
-          lineContainer.style.alignItems = "flex-start";
-          
-          // Número da linha
-          const lineNumber = document.createElement("span");
-          lineNumber.className = "tree-line-number";
-          lineNumber.textContent = lineNumbers[index];
-          lineNumber.style.minWidth = "30px";
-          lineNumber.style.marginRight = "8px";
-          lineNumber.style.color = "#718096";
-          lineNumber.style.fontSize = "12px";
-          lineNumber.style.userSelect = "none";
-          
-          // Conteúdo da linha
-          const lineContent = document.createElement("span");
-          lineContent.textContent = line;
-          lineContent.style.flex = "1";
-          
-          // Adicionar funcionalidade de expandir/minimizar para objetos e arrays
-          if (line.includes('{') || line.includes('[')) {
-            const expandButton = document.createElement("span");
-            expandButton.className = "tree-expand-btn";
-            expandButton.textContent = "▼"; // Começar expandido
-            expandButton.style.marginRight = "4px";
-            expandButton.style.cursor = "pointer";
-            expandButton.style.color = "#63b3ed";
-            expandButton.style.fontSize = "10px";
-            expandButton.style.userSelect = "none";
-            
-            lineContainer.appendChild(expandButton);
-            lineContainer.appendChild(lineNumber);
-            lineContainer.appendChild(lineContent);
-            
-            // Adicionar funcionalidade de expandir/minimizar
-            expandButton.onclick = (e) => {
-              e.stopPropagation();
-              const isExpanded = expandButton.textContent === "▼";
-              expandButton.textContent = isExpanded ? "▶" : "▼";
-              
-              // Toggle das linhas filhas usando uma abordagem mais robusta
-              toggleChildLines(lineElement, isExpanded);
-            };
-            
-          } else {
-            lineContainer.appendChild(lineNumber);
-            lineContainer.appendChild(lineContent);
-          }
-          
-          lineElement.appendChild(lineContainer);
-          
-          lineElement.onclick = () => {
-            // Remover seleção anterior
-            const previousSelected = parent.querySelector('.tree-line.selected');
-            if (previousSelected) {
-              previousSelected.classList.remove('selected');
+          lines.forEach((line, index) => {
+            const lineElement = document.createElement("div");
+            lineElement.className = "tree-line";
+            lineElement.dataset.lineIndex = index;
+            const lineContainer = document.createElement("div");
+            lineContainer.style.display = "flex";
+            lineContainer.style.alignItems = "flex-start";
+            const lineNumber = document.createElement("span");
+            lineNumber.className = "tree-line-number";
+            lineNumber.textContent = lineNumbers[index];
+            lineNumber.style.minWidth = "30px";
+            lineNumber.style.marginRight = "8px";
+            lineNumber.style.color = "#718096";
+            lineNumber.style.fontSize = "12px";
+            lineNumber.style.userSelect = "none";
+            const lineContent = document.createElement("span");
+            lineContent.textContent = line;
+            lineContent.style.flex = "1";
+            if (line.includes('{') || line.includes('[')) {
+              const expandButton = document.createElement("span");
+              expandButton.className = "tree-expand-btn";
+              expandButton.textContent = "▼";
+              expandButton.style.marginRight = "4px";
+              expandButton.style.cursor = "pointer";
+              expandButton.style.color = "#63b3ed";
+              expandButton.style.fontSize = "10px";
+              expandButton.style.userSelect = "none";
+              lineContainer.appendChild(expandButton);
+              lineContainer.appendChild(lineNumber);
+              lineContainer.appendChild(lineContent);
+              expandButton.onclick = (e) => {
+                e.stopPropagation();
+                const isExpanded = expandButton.textContent === "▼";
+                expandButton.textContent = isExpanded ? "▶" : "▼";
+                toggleChildLines(lineElement, isExpanded);
+              };
+            } else {
+              lineContainer.appendChild(lineNumber);
+              lineContainer.appendChild(lineContent);
             }
-            
-            // Adicionar seleção à linha atual
-            lineElement.classList.add('selected');
-          };
-          
-          parent.appendChild(lineElement);
-        });
-        
-        // Inicializar estado colapsado após todos os elementos serem criados
-        initializeCollapsedState(parent, lines);
-        
+            lineElement.appendChild(lineContainer);
+            lineElement.onclick = () => {
+              const previousSelected = parent.querySelector('.tree-line.selected');
+              if (previousSelected) {
+                previousSelected.classList.remove('selected');
+              }
+              lineElement.classList.add('selected');
+            };
+            parent.appendChild(lineElement);
+          });
+          initializeCollapsedState(parent, lines);
         } catch (e) {
           console.error('Erro ao construir árvore:', e);
           parent.innerHTML = `<div style="color: red;">Erro ao construir visualização em árvore: ${e.message}</div>`;
         }
       }
-      
       function initializeCollapsedState(parent, lines) {
-        // Iniciar com tudo expandido - não esconder nada por padrão
         const allLines = parent.querySelectorAll('.tree-line');
         allLines.forEach((lineElement) => {
           const lineText = lineElement.textContent.trim();
           if (lineText.includes('{') || lineText.includes('[')) {
-            // Usar a nova função para garantir que tudo esteja visível
-            toggleChildLines(lineElement, false); // false = expandir
+            toggleChildLines(lineElement, false);
           }
         });
       }
-      
-      function getChildLines(parentIndex, lines) {
-        const childLines = [];
-        const parentLine = lines[parentIndex];
-        const indentLevel = getIndentLevel(parentLine);
-        
-        // Para arrays, pegar apenas as linhas imediatamente filhas (próximo nível de indentação)
-        for (let i = parentIndex + 1; i < lines.length; i++) {
-          const currentIndent = getIndentLevel(lines[i]);
-          
-          // Se a indentação é menor ou igual ao pai, paramos
-          if (currentIndent <= indentLevel) {
-            break;
-          }
-          
-          // Se a indentação é exatamente o próximo nível, é filho direto
-          if (currentIndent === indentLevel + 1) {
-            childLines.push(i);
-          }
-        }
-        
-        return childLines;
-      }
-      
       function getIndentLevel(line) {
-        return (line.match(/^  /g) || []).length;
+        return (line.match(/^ /g) || []).length;
       }
-      
       function toggleChildLines(parentElement, shouldCollapse) {
         const parentText = parentElement.textContent.trim();
         const parentIndent = getIndentLevel(parentText);
         const allLines = parentElement.parentElement.querySelectorAll('.tree-line');
-        
-        console.log(`Toggle para: "${parentText}" (indent: ${parentIndent}, shouldCollapse: ${shouldCollapse})`);
-        
-        // Encontrar o índice do elemento pai
         let parentIndex = -1;
         allLines.forEach((line, index) => {
           if (line === parentElement) {
             parentIndex = index;
           }
         });
-        
-        if (parentIndex === -1) {
-          console.log("Elemento pai não encontrado!");
-          return;
-        }
-        
-        console.log(`Índice do pai: ${parentIndex}`);
-        
-        // Encontrar e togglear as linhas filhas
+        if (parentIndex === -1) return;
         for (let i = parentIndex + 1; i < allLines.length; i++) {
           const childLine = allLines[i];
           const childText = childLine.textContent.trim();
           const childIndent = getIndentLevel(childText);
-          
-          console.log(`Verificando linha ${i}: "${childText}" (indent: ${childIndent})`);
-          
-          // Se a indentação é menor ou igual ao pai, paramos
-          if (childIndent <= parentIndent) {
-            console.log(`Parando - indentação menor ou igual ao pai`);
-            break;
-          }
-          
-          // Se é filho direto (próximo nível), togglear
+          if (childIndent <= parentIndent) break;
           if (childIndent === parentIndent + 1) {
             childLine.style.display = shouldCollapse ? "none" : "flex";
-            console.log(`Toggle child: "${childText}" -> ${shouldCollapse ? 'hidden' : 'visible'}`);
           }
         }
       }
-      
       function buildTreeTextWithNumbers(obj, lines, lineNumbers, level, startLineNumber) {
-        const indent = "  ".repeat(level);
+        const indent = " ".repeat(level);
         const isArray = Array.isArray(obj);
         let currentLineNumber = startLineNumber;
-        
         if (isArray) {
           lines.push(`${indent}[`);
           lineNumbers.push(currentLineNumber++);
           obj.forEach((item, index) => {
             if (typeof item === "object" && item !== null) {
-              // Para objetos dentro de arrays, apenas indicar o índice
-              lines.push(`${indent}  ${index}:`);
+              lines.push(`${indent} ${index}:`);
               lineNumbers.push(currentLineNumber++);
               currentLineNumber = buildTreeTextWithNumbers(item, lines, lineNumbers, level + 2, currentLineNumber);
             } else {
               const value = typeof item === "string" ? `"${item}"` : item;
-              lines.push(`${indent}  ${index}: ${value}`);
+              lines.push(`${indent} ${index}: ${value}`);
               lineNumbers.push(currentLineNumber++);
             }
           });
@@ -1653,394 +962,49 @@
           lineNumbers.push(currentLineNumber++);
           Object.entries(obj).forEach(([key, value]) => {
             if (typeof value === "object" && value !== null) {
-              lines.push(`${indent}  "${key}":`);
+              lines.push(`${indent} "${key}":`);
               lineNumbers.push(currentLineNumber++);
               currentLineNumber = buildTreeTextWithNumbers(value, lines, lineNumbers, level + 2, currentLineNumber);
             } else {
               const val = typeof value === "string" ? `"${value}"` : value;
-              lines.push(`${indent}  "${key}": ${val}`);
+              lines.push(`${indent} "${key}": ${val}`);
               lineNumbers.push(currentLineNumber++);
             }
           });
           lines.push(`${indent}}`);
           lineNumbers.push(currentLineNumber++);
         }
-        
         return currentLineNumber;
       }
-      
-      function buildTreeText(obj, lines, level) {
-        const indent = "  ".repeat(level);
-        const isArray = Array.isArray(obj);
-        
-        if (isArray) {
-          lines.push(`${indent}[`);
-          obj.forEach((item, index) => {
-            if (typeof item === "object" && item !== null) {
-              lines.push(`${indent}  ${index}:`);
-              buildTreeText(item, lines, level + 2);
-            } else {
-              const value = typeof item === "string" ? `"${item}"` : item;
-              lines.push(`${indent}  ${index}: ${value}`);
-            }
-          });
-          lines.push(`${indent}]`);
-        } else {
-          lines.push(`${indent}{`);
-          Object.entries(obj).forEach(([key, value]) => {
-            if (typeof value === "object" && value !== null) {
-              lines.push(`${indent}  "${key}":`);
-              buildTreeText(value, lines, level + 2);
-            } else {
-              const val = typeof value === "string" ? `"${value}"` : value;
-              lines.push(`${indent}  "${key}": ${val}`);
-            }
-          });
-          lines.push(`${indent}}`);
-        }
-      }
-
-
       function isImageUrl(url) {
         return /\.(jpg|jpeg|png|gif|bmp|svg)$/i.test(url);
       }
-
-      // Função de teste para verificar a funcionalidade
-      function testJSONRepair() {
-        const testCases = [
-          {
-            name: "Múltiplos objetos sem colchetes",
-            json: `{"Id":893,"Descricao":"DROP TABLE","Correta":true},{"Id":894,"Descricao":"DELETE FROM","Correta":false}]`
-          },
-          {
-            name: "JSON com aspas no início e fim",
-            json: `"{"Id":893,"Descricao":"DROP TABLE","Correta":true}"`
-          },
-          {
-            name: "JSON faltando chave de abertura",
-            json: `"Id":893,"Descricao":"DROP TABLE","Correta":true}`
-          },
-          {
-            name: "JSON faltando chave de fechamento",
-            json: `{"Id":893,"Descricao":"DROP TABLE","Correta":true`
+      function showMessage(message, type) {
+        const messageClass = type === "error" ? "json-error" :
+                           type === "repair" ? "json-repaired" :
+                           "json-repaired";
+        error.innerHTML = `<div class="${messageClass}">${message}</div>`;
+        setTimeout(() => {
+          if (error.innerHTML.includes(message)) {
+            error.innerHTML = "";
           }
-        ];
-
-        console.log("=== TESTE DE REPARO JSON ===");
-        
-        testCases.forEach((testCase, index) => {
-          console.log(`\nTeste ${index + 1}: ${testCase.name}`);
-          console.log("Original:", testCase.json);
-          
-          try {
-            const analysis = analyzeJSONStructure(testCase.json);
-            console.log("Análise:", analysis);
-            
-            const repaired = repairBrokenJSONWithError(testCase.json, "Unexpected token");
-            console.log("Reparado:", repaired);
-            
-            try {
-              const parsed = JSON.parse(repaired);
-              console.log("✅ Válido! Tipo:", Array.isArray(parsed) ? "Array" : "Object");
-            } catch (e) {
-              console.log("❌ Ainda inválido:", e.message);
-            }
-          } catch (e) {
-            console.log("❌ Erro:", e.message);
-          }
-        });
+        }, 5000);
       }
-
-      // Disponibilizar função de teste globalmente
-      window.testJSONRepair = testJSONRepair;
-      
-      // Função de debug para a árvore
-      function debugTree() {
-        console.log("=== DEBUG ÁRVORE ===");
-        const treeElement = document.getElementById('tree');
-        const lines = treeElement.querySelectorAll('.tree-line');
-        console.log(`Total de linhas: ${lines.length}`);
-        
-        lines.forEach((line, index) => {
-          const content = line.textContent.trim();
-          const indent = getIndentLevel(content);
-          const hasExpandBtn = line.querySelector('.tree-expand-btn');
-          console.log(`Linha ${index}: "${content}" (indent: ${indent}, expand: ${!!hasExpandBtn})`);
-        });
-      }
-      
-      window.debugTree = debugTree;
-      
-      // Função para testar a minimização
-      function testTreeMinimize() {
-        console.log("=== TESTE MINIMIZAÇÃO ÁRVORE ===");
-        const treeElement = document.getElementById('tree');
-        const expandButtons = treeElement.querySelectorAll('.tree-expand-btn');
-        console.log(`Encontrados ${expandButtons.length} botões de expandir`);
-        
-        expandButtons.forEach((btn, index) => {
-          console.log(`Botão ${index}: "${btn.textContent}" - Parent: "${btn.parentElement.textContent.trim()}"`);
-        });
-      }
-      
-      window.testTreeMinimize = testTreeMinimize;
-      
-      // Função para testar com JSON de exemplo
-      function testTreeWithSampleJSON() {
-        const sampleJSON = [
-          {
-            "id": 1,
-            "name": "João",
-            "details": {
-              "age": 30,
-              "city": "São Paulo"
-            }
-          },
-          {
-            "id": 2,
-            "name": "Maria",
-            "details": {
-              "age": 25,
-              "city": "Rio de Janeiro"
-            }
-          }
-        ];
-        
-        // Inserir o JSON de teste
-        input.value = JSON.stringify(sampleJSON, null, 2);
-        formatJSON();
-        
-        // Mudar para modo árvore
-        toggleView('tree');
-        
-        console.log("JSON de teste inserido. Verifique o modo árvore.");
-      }
-      
-      window.testTreeWithSampleJSON = testTreeWithSampleJSON;
-      
-      // Função de debug detalhada para a árvore
-      function debugTreeDetailed() {
-        console.log("=== DEBUG DETALHADO DA ÁRVORE ===");
-        const treeElement = document.getElementById('tree');
-        const lines = treeElement.querySelectorAll('.tree-line');
-        console.log(`Total de linhas: ${lines.length}`);
-        
-        lines.forEach((line, index) => {
-          const content = line.textContent.trim();
-          const indent = getIndentLevel(content);
-          const hasExpandBtn = line.querySelector('.tree-expand-btn');
-          const expandBtnText = hasExpandBtn ? hasExpandBtn.textContent : 'N/A';
-          
-          console.log(`Linha ${index}: "${content}" (indent: ${indent}, expand: ${!!hasExpandBtn}, btn: "${expandBtnText}")`);
-          
-          // Mostrar estrutura HTML da linha
-          if (hasExpandBtn) {
-            console.log(`  - HTML:`, line.innerHTML);
-          }
-        });
-        
-        // Testar toggle manualmente
-        const firstExpandBtn = treeElement.querySelector('.tree-expand-btn');
-        if (firstExpandBtn) {
-          console.log("Testando toggle do primeiro botão...");
-          firstExpandBtn.click();
-          console.log("Toggle executado. Verifique se as linhas filhas foram escondidas/mostradas.");
-        } else {
-          console.log("Nenhum botão de expandir encontrado!");
-        }
-      }
-      
-      window.debugTreeDetailed = debugTreeDetailed;
-      
-      // Função para testar JSON com HTML escapado
-      function testHTMLJSON() {
-        const htmlJSON = `{
-    "status": "ok",
-    "httpStatusCode": 200,
-    "data": {
-        "message": "Registro criado com sucesso",
-        "CodUsuario": 2777841,
-        "Senha": "432311",
-        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target=\\"\\_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/ava.cofenplay.com.br\\">AVA Cofenplay<\\/a><\\/p><p><a target=\\"\\_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/cofenplay.com.br\\">Cofenplay<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src=\\"http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863\\">"
-    }
-}`;
-        
-        // Inserir o JSON de teste
-        input.value = htmlJSON;
-        formatJSON();
-        
-        console.log("JSON com HTML escapado inserido. Verifique se foi formatado corretamente.");
-      }
-      
-      window.testHTMLJSON = testHTMLJSON;
-      
-      // Função para testar o JSON problemático específico
-      function testProblematicJSON() {
-        const problematicJSON = `{
-    "status": "ok",
-    "httpStatusCode": 200,
-    "data": {
-        "message": "Registro criado com sucesso",
-        "CodUsuario": 2777841,
-        "Senha": "432311",
-        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target="_blank" rel="noopener noreferrer nofollow" href="https:\\/\\/ava.cofenplay.com.br">AVA Cofenplay<\\/a><\\/p><p><a target="_blank" rel="noopener noreferrer nofollow" href="https:\\/\\/cofenplay.com.br">Cofenplay<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src="http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863">"
-    }
-}`;
-        
-        console.log("=== TESTE DO JSON PROBLEMÁTICO ===");
-        console.log("JSON original inserido");
-        
-        // Inserir o JSON de teste
-        input.value = problematicJSON;
-        
-        // Tentar formatar
-        try {
-          formatJSON();
-          console.log("✅ JSON formatado com sucesso!");
-        } catch (e) {
-          console.log("❌ Erro ao formatar:", e.message);
-        }
-      }
-
-      // Função para testar o JSON exato fornecido pelo usuário
-      function testUserJSON() {
-        const userJSON = `{
-    "status": "ok",
-    "httpStatusCode": 200,
-    "data": {
-        "message": "Registro criado com sucesso",
-        "CodUsuario": 2777841,
-        "Senha": "432311",
-        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/ava.cofenplay.com.br\\">AVA Cofenplay<\\/a><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/cofenplay.com.br\\">Cofen Regex<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src=\\"http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863\\">"
-    }
-}`;
-        
-        console.log("=== TESTE DO JSON DO USUÁRIO ===");
-        console.log("JSON exato fornecido pelo usuário inserido");
-        
-        // Inserir o JSON de teste
-        input.value = userJSON;
-        
-        // Tentar formatar
-        try {
-          formatJSON();
-          console.log("✅ JSON formatado com sucesso!");
-        } catch (e) {
-          console.log("❌ Erro ao formatar:", e.message);
-          console.log("Tentando reparar automaticamente...");
-          
-          // Tentar reparar
-          try {
-            repairJSON();
-          } catch (repairError) {
-            console.log("❌ Erro ao reparar:", repairError.message);
-          }
-        }
-      }
-
-      // Função para testar com a mesma lógica do JSON Formatter
-      function testJSONFormatterLogic() {
-        const userJSON = `{
-    "status": "ok",
-    "httpStatusCode": 200,
-    "data": {
-        "message": "Registro criado com sucesso",
-        "CodUsuario": 2777841,
-        "Senha": "432311",
-        "HtmlEmail": "<h2>Cadastro realizado com sucesso!<\\/h2><p>Olá <strong>{NOME}<\\/strong>,<\\/p><p>Seja bem-vindo à nossa plataforma!<\\/p><p>Seu cadastro foi concluído com sucesso. Abaixo estão seus dados de acesso:<\\/p><ul><li><p><strong>Usuário:<\\/strong>Informe o seu CPF<\\/p><\\/li><li><p><strong>Senha:<\\/strong> {SENHA}<\\/p><\\/li><\\/ul><p><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/ava.cofenplay.com.br\\">AVA Cofenplay<\\/a><\\/p><p><a target=\\"_blank\\" rel=\\"noopener noreferrer nofollow\\" href=\\"https:\\/\\/cofenplay.com.br\\">Cofenplay<\\/a><\\/p><p><br><\\/p><p>Atenciosamente,<br>Equipe Cofenplay<\\/p><p><\\/p><img src=\\"http:\\/\\/45.178.224.46:6002\\/public\\/file-1755872453364-898452527.png?token=d4d1e6e706908e364d3838679e8d6863\\">"
-    }
-}`;
-        
-        console.log("=== TESTE COM LÓGICA DO JSON FORMATTER ===");
-        console.log("Testando com a mesma lógica simples do JSON Formatter");
-        
-        // Inserir o JSON de teste
-        input.value = userJSON;
-        
-        // Usar a mesma lógica do JSON Formatter
-        let text = userJSON.trim();
-        
-        // Remover aspas externas se existirem (como o JSON Formatter faz)
-        if ((text.startsWith('"') && text.endsWith('"')) || 
-            (text.startsWith("'") && text.endsWith("'"))) {
-          text = text.slice(1, -1);
-        }
-        
-        console.log("Texto após limpeza simples:", text.substring(0, 100) + "...");
-        
-        try {
-          let json = text;
-          // Tentar parsear múltiplos níveis de strings JSON (como o JSON Formatter faz)
-          while (typeof json === "string") {
-            json = JSON.parse(json);
-          }
-          
-          console.log("✅ JSON parseado com sucesso usando a lógica do JSON Formatter!");
-          console.log("Tipo:", Array.isArray(json) ? "Array" : "Object");
-          console.log("Chaves principais:", Object.keys(json));
-          
-          // Formatar e exibir
-          formatJSON();
-          
-        } catch (e) {
-          console.log("❌ Erro ao parsear:", e.message);
-          console.log("Posição do erro:", e.message.match(/position \d+/)?.[0]);
-        }
-      }
-
-      // Função para testar o JSON problemático atual
-      function testCurrentJSON() {
-        console.log("=== TESTE DO JSON ATUAL ===");
-        console.log("JSON atual do campo de entrada:");
-        
-        const currentJSON = input.value;
-        console.log("Primeiros 100 caracteres:", currentJSON.substring(0, 100));
-        console.log("Últimos 100 caracteres:", currentJSON.substring(Math.max(0, currentJSON.length - 100)));
-        
-        // Tentar formatar
-        try {
-          formatJSON();
-          console.log("✅ JSON formatado com sucesso!");
-        } catch (e) {
-          console.log("❌ Erro ao formatar:", e.message);
-          console.log("Posição do erro:", e.message.match(/position \d+/)?.[0]);
-          
-          // Mostrar o caractere na posição do erro
-          const positionMatch = e.message.match(/position (\d+)/);
-          if (positionMatch) {
-            const position = parseInt(positionMatch[1]);
-            console.log("Caractere na posição", position, ":", JSON.stringify(currentJSON[position]));
-            console.log("Contexto ao redor:", JSON.stringify(currentJSON.substring(Math.max(0, position - 10), position + 10)));
-          }
-        }
-      }
-      
-      window.testProblematicJSON = testProblematicJSON;
-      window.testUserJSON = testUserJSON;
-      window.testCurrentJSON = testCurrentJSON;
-      window.testJSONFormatterLogic = testJSONFormatterLogic;
-      
-      // Função de pesquisa
       function searchJSON() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-        
         if (searchTerm === '') {
           clearSearch();
           return;
         }
-        
         if (currentView === 'code') {
           searchInCodeView(searchTerm);
         } else {
           searchInTreeView(searchTerm);
         }
       }
-      
       function searchInCodeView(searchTerm) {
         const output = document.getElementById('output');
         const lines = output.querySelectorAll('.code-line');
-        
-        // Remover highlights anteriores
         lines.forEach(line => {
           line.classList.remove('search-result');
           const highlights = line.querySelectorAll('.search-highlight');
@@ -2050,9 +1014,7 @@
             parent.normalize();
           });
         });
-        
         let foundResults = false;
-        
         lines.forEach(line => {
           const lineContent = line.querySelector('.line-content');
           if (lineContent) {
@@ -2060,27 +1022,20 @@
             if (text.includes(searchTerm)) {
               line.classList.add('search-result');
               foundResults = true;
-              
-              // Destacar o termo encontrado
               highlightSearchTerm(lineContent, searchTerm);
             }
           }
         });
-        
         if (foundResults) {
-          // Scroll para o primeiro resultado
           const firstResult = output.querySelector('.search-result');
           if (firstResult) {
             firstResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
       }
-      
       function searchInTreeView(searchTerm) {
         const tree = document.getElementById('tree');
         const lines = tree.querySelectorAll('.tree-line');
-        
-        // Remover highlights anteriores
         lines.forEach(line => {
           line.classList.remove('search-result');
           const highlights = line.querySelectorAll('.search-highlight');
@@ -2090,43 +1045,33 @@
             parent.normalize();
           });
         });
-        
         let foundResults = false;
-        
         lines.forEach(line => {
           const text = line.textContent.toLowerCase();
           if (text.includes(searchTerm)) {
             line.classList.add('search-result');
             foundResults = true;
-            
-            // Destacar o termo encontrado
             const lineContent = line.querySelector('span:last-child');
             if (lineContent) {
               highlightSearchTerm(lineContent, searchTerm);
             }
           }
         });
-        
         if (foundResults) {
-          // Scroll para o primeiro resultado
           const firstResult = tree.querySelector('.search-result');
           if (firstResult) {
             firstResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
       }
-      
       function highlightSearchTerm(element, searchTerm) {
         const text = element.textContent;
         const regex = new RegExp(`(${searchTerm})`, 'gi');
         const highlightedText = text.replace(regex, '<span class="search-highlight">$1</span>');
         element.innerHTML = highlightedText;
       }
-      
       function clearSearch() {
         document.getElementById('searchInput').value = '';
-        
-        // Remover todos os highlights
         const allLines = document.querySelectorAll('.code-line, .tree-line');
         allLines.forEach(line => {
           line.classList.remove('search-result');
